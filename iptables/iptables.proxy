@@ -1,0 +1,32 @@
+# Firewall configuration written by system-config-firewall
+# Manual customization of this file is not recommended.
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A INPUT -s 10.0.0.0/24 -j ACCEPT
+-A INPUT -s 172.18.1.0/24 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 8081 -j ACCEPT
+-A INPUT -p tcp -m tcp --dport 443 -j ACCEPT
+-A INPUT -s 101.231.69.78 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -s 27.115.13.122 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -s 27.115.13.123 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -s 27.115.13.124 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -s 115.29.178.105 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -s 112.124.9.25 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -s 114.92.219.196 -p tcp -m tcp --dport 22 -j ACCEPT
+-A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p icmp -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -i em1 -j DROP
+-A INPUT -i em2 -j DROP
+COMMIT
+*raw
+:PREROUTING ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+-A PREROUTING -p tcp -m multiport --dports 80,11211,11212 -j NOTRACK
+#-A PREROUTING -p tcp -m multiport --sports 80,11211,11212 -j NOTRACK
+-A OUTPUT -p tcp -m multiport --sports 80,11211,11212 -j NOTRACK
+#-A OUTPUT -p tcp -m multiport --dports 80,11211,11212 -j NOTRACK
+COMMIT
