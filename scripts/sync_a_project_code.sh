@@ -1,6 +1,19 @@
+
+p_ret() {
+	if [ -z "$3" ];then
+		return 1
+	fi
+
+	if [ "$1" -eq 0 ];then
+		echo -e "$2"
+	else
+		echo -e "$3"
+	fi
+}
+
 sync_individually() {
 	#usage: echo 72cf40a112e106565e2cbcb4cebec8a0 sync_a_project_code haoyadatestdemo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200
-	local APP_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13')
+	local APP_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13' '10.0.0.1' '10.0.0.2')
 	local PXY_IP_ARY=('10.0.0.1' '10.0.0.2')
 	local parameter='-vrptl --delete'
 
@@ -51,6 +64,13 @@ sync_individually() {
 	#按webroot目录,分发项目代码
 	echo -e "分发 /home/webs/${subdir}/ 目录 :\n"
 	for ip in ${APP_IP_ARY[@]} ;do
+		if [ "${ip}" = '10.0.0.1' -o "${ip}" = '10.0.0.2' ];then
+			if ! echo -n ${subdir}|grep -q -i -e '^icc' -e 'cloud' ;then
+				# 如果不是icc这个项目,不要分发到 10.0.0.1 和 10.0.0.2.
+				continue
+			fi
+		fi
+
 		/bin/env USER='backup' RSYNC_PASSWORD='123456' /usr/bin/rsync \
 		${parameter} \
 		--blocking-io \
@@ -59,6 +79,8 @@ sync_individually() {
 		--exclude='/cache/*' \
 		/home/webs/${subdir}/ \
 		${ip}::web/${subdir}/
+
+		p_ret $? "分发项目 ${hostname} 代码到 ${ip},分发成功.\n" "分发项目 ${hostname} 代码到 ${ip},分发失败.\n"
 	done
 
 	#按域名清理缓存

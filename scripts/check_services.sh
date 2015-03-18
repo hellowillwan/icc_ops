@@ -222,14 +222,18 @@ api_urls () {
 mongodb () {	
 	#check replica-set status
 	displayheader 'Checking Replica-set status'
-	for port in 40001 40002 50001 50002;do
+	#for port in 40001 40002 50001 50002;do
+	for connstr in 10.0.0.40:40000 10.0.0.50:40000 10.0.0.42:50000 10.0.0.52:50000;do
 		#echo "rs.status()"|mongo 10.0.0.200:${port}|grep -e '"set"' -e '"name"' -e '"stateStr"'|awk -F':' '{print $2}'|tr -d '\n|"'| \
 		#sed "s/^ *//;s/,$/\n/"
 
-		echo "rs.status()"|mongo 10.0.0.51:${port}|awk -F '"' '/"set"|"name"|"stateStr"/{printf "%-s,",$4}END{printf "\n"}'| \
+		echo "rs.status()"|mongo ${connstr}|awk -F '"' '/"set"|"name"|"stateStr"/{printf "%-s,",$4}END{printf "\n"}'| \
 		sed "s/,/:: /;s/Y,/Y; /g;s/..$/\./;s/,/:/g"
 
-		echo 'db.printSlaveReplicationInfo()'|mongo 10.0.0.51:${port} \
+		echo 'db.printReplicationInfo()'|mongo ${connstr}|grep -e '^configured oplog size:' -e '^log length start to end:' \
+		-e '^oplog first event time:' -e '^oplog last event time:'
+
+		echo 'db.printSlaveReplicationInfo()'|mongo ${connstr} \
 		|awk '/source:|syncedTo:|secs ago/{gsub("[ |\t]{1,}"," ");gsub("source:","\n");printf "%-s",$0} END{printf "\n\n"}'
 	done
 

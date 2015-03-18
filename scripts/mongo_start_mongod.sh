@@ -30,6 +30,26 @@ mongod_5w ()
 	echo -en "\n\n\nret:$? 5w-mongod Logfile: /home/50000/log/10.0.0.40.log\n\n"
 }
 
+mongod_6w ()
+{
+	ulimit -u 65536
+	/home/60000/bin/mongod --port 60000 \
+	--shardsvr --replSet shard1 \
+	--setParameter failIndexKeyTooLong=false \
+	--storageEngine wiredTiger \
+	--dbpath /home/60000/data \
+	--logpath /home/60000/log/mongod.log \
+	--logappend \
+	--fork
 
-$1
 
+	echo -en "\n\n\nret:$? 6w-mongod Logfile: /home/60000/log/mongod.log\n\n"
+}
+
+
+if grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{?" $0 ;then
+	$1
+else
+	echo "cmd not found,nothing done."
+	exit 1
+fi

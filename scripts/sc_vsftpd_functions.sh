@@ -140,18 +140,26 @@ ensure_ftp_account() {
 		local my_ip=$3			#用户公网IP
 	fi
 
-	#检查用户提交的域名
+	#检查用户提交的域名或目录名
 	if  chk_hostname $hostname ;then
+		#域名有配置到系统
 		local my_dir=$(get_dir_from_hostname $hostname)
-		#检查是否有创建Ftp账号的必要
-		if ! echo ${my_dir}|grep -P -e '\.(com|cn|org|net)$' -q  && echo ${my_ip}|grep -e '101.231.69.78' -e '27.115.13.12' -q ;then
-			#项目采用发布工具,办公室IP
-			echo "你在办公室、并且这个项目可以使用发布工具发布，没必要开设Ftp账号.如有疑问，请联系管理员."
-			return 1
-		fi
 	else
-		#域名检查失败,不是配置过的,直接退出
-		echo "此域名没有配置到系统,请检查后重新提交."
+		#域名没有配置到系统或者不是合法域名,继续检查是否是目录名
+		if [ ! -d /home/webs/${hostname} ];then
+			#不是目录名,直接退出
+			echo "域名没有配置到系统或代码目录没找到,请检查后重新提交."
+			return 1
+		else
+			local my_dir="/home/webs/${hostname}"
+		fi
+	fi
+
+	#检查是否有创建Ftp账号的必要
+	if ! echo ${my_dir}|grep -P -e '(\.(com|cn|org|net|)|common)$' -q  && echo ${my_ip}|grep -e '101.231.69.78' -e '27.115.13.12' -q ;then
+		#代码目录不是以域名结尾的(老项目)，不是以common结尾的(common目录)，并且提供的IP是办公室IP,也就是：项目采用发布工具 && 办公室IP
+		echo "'$my_dir'"
+		echo "你在办公室、并且这个项目可以使用发布工具发布，没必要开设Ftp账号.如有疑问，请联系管理员."
 		return 1
 	fi
 
