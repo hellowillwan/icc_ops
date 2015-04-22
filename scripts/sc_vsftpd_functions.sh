@@ -145,19 +145,22 @@ ensure_ftp_account() {
 		#域名有配置到系统
 		local my_dir=$(get_dir_from_hostname $hostname)
 	else
-		#域名没有配置到系统或者不是合法域名,继续检查是否是目录名
-		if [ ! -d /home/webs/${hostname} ];then
+		#域名没有配置到系统或者不是合法域名,继续检查是否是目录名(/home/webs/DIRs or /tmp/xdebug_log_dir 目录 )
+		if [ -d /home/webs/${hostname} ];then
+			local my_dir="/home/webs/${hostname}"
+		elif [ "${hostname}" = 'xdebug_log_dir' -a -d /tmp/xdebug_log_dir ];then
+			local my_dir="/tmp/xdebug_log_dir"
+		else
 			#不是目录名,直接退出
 			echo "域名没有配置到系统或代码目录没找到,请检查后重新提交."
 			return 1
-		else
-			local my_dir="/home/webs/${hostname}"
 		fi
 	fi
 
 	#检查是否有创建Ftp账号的必要
-	if ! echo ${my_dir}|grep -P -e '(\.(com|cn|org|net|)|common)$' -q  && echo ${my_ip}|grep -e '101.231.69.78' -e '27.115.13.12' -q ;then
-		#代码目录不是以域名结尾的(老项目)，不是以common结尾的(common目录)，并且提供的IP是办公室IP,也就是：项目采用发布工具 && 办公室IP
+	if ! echo ${my_dir}|grep -P -e '(\.(com|cn|org|net|)|common|xdebug_log_dir)$' -q  && echo ${my_ip}|grep -e '101.231.69.78' -e '27.115.13.12' -q ;then
+		#代码目录不是以域名结尾的(老项目)，不是以common结尾的(common目录)，不是xdebug_log_dir，并且提供的IP是办公室IP,
+		#也就是：项目采用发布工具 && 办公室IP
 		echo "'$my_dir'"
 		echo "你在办公室、并且这个项目可以使用发布工具发布，没必要开设Ftp账号.如有疑问，请联系管理员."
 		return 1

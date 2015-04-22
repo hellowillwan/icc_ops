@@ -77,6 +77,7 @@ sync_individually() {
 		--exclude='.svn' \
 		--exclude='*.log' \
 		--exclude='/cache/*' \
+		--exclude='/logs/*' \
 		/home/webs/${subdir}/ \
 		${ip}::web/${subdir}/
 
@@ -84,10 +85,12 @@ sync_individually() {
 	done
 
 	#按域名清理缓存
-	for ip in ${PXY_IP_ARY[@]} ;do
-		echo "${hostname} /" |/usr/bin/gearman -h 211.152.60.33 -f "purge_${ip}" -b
-	done
-	echo -e "\n清理缓存: ${hostname} 已提交到队列."
+	if [ "${hostname}" != 'common.umaman.com' -a "${hostname}" != 'ZendFramework-1.12.9-minimal.umaman.com' ] ;then
+		for ip in ${PXY_IP_ARY[@]} ;do
+			echo "${hostname} /" |/usr/bin/gearman -h 211.152.60.33 -f "purge_${ip}" -b
+		done
+		echo -e "\n清理缓存: ${hostname} 已提交到队列."
+	fi
 }
 
 

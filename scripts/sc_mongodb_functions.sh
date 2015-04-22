@@ -121,6 +121,12 @@ get_collection_info() {
 	#	DB="$4"
 	#	COLLECTION_NAME="$5"
 	#fi
+	#
+	#下面 project_id , project_name 取值可能错误,因为提供的 COLLECTION_NAME 未必都是 ObjectId, 比如weixin.oauth,weixin.oauthsns
+	# mongos> db.getCollection('iDatabase.form').find({'_id':ObjectId('oauthsns')},{'_id':0,'formDesc':1})
+	# Fri Apr  3 11:57:38.042 Error: invalid object id: length
+	# 这种情况下, project_id , project_name 的值就是个时间值(11:57:38.042)了
+	#
 
 	if [ "${DB}" = 'ICCv1' ];then
 		col_name=$(echo "db.getCollection('idatabase_collections').find({'_id':ObjectId('${COLLECTION_NAME##*_}')},{'_id':0,'name':1})" \
@@ -193,9 +199,9 @@ find_collection() {
 	local query_rst=$(echo "${query_str}" \
 			|${MONGO} ${MONGOS_IP}:${MONGOS_PORT}/${DB} \
 			|grep -v -e 'MongoDB shell version' -e 'connecting to:' -e '^bye$' -e '^[ |\t]*$' \
-			|awk 'BEGIN{ORS="<br>"}{print}' )
+			|awk 'BEGIN{ORS="</xmp><br><xmp>"}{print}' |sed 's/<br><xmp>$//' )
 	echo -e "查询语句:\n" ${query_str}
-	echo -e "查询结果:\n" ${query_rst}
+	echo -e "查询结果:\n<xmp>" ${query_rst}
 }
 
 #查询集合主逻辑
@@ -215,6 +221,8 @@ mongo_query() {
 			MONGOS_PORT='27017'
 		elif [ "$DB" = "ICCv1" ] ;then
 			MONGOS_PORT='57017'
+		elif [ "$DB" = "mapreduce" ] ;then
+			MONGOS_PORT='57017'
 		else
 			echo "DB not exist"
 			return 2
@@ -228,7 +236,12 @@ mongo_query() {
 	fi
 
 	#提供的集合名称,很可能是不带前缀的,这里检查所有匹配的集合,暂时不限制数量了
-	for COLLECTION_NAME in "$(echo 'show collections'|${MONGO} ${MONGOS_IP}:${MONGOS_PORT}/${DB} 2>/dev/null|grep ${COLLECTION_LIKE} 2>/dev/null)";do
+	MATCHED_COLLECTIONS=$(echo 'show collections'|${MONGO} ${MONGOS_IP}:${MONGOS_PORT}/${DB} 2>/dev/null|grep ${COLLECTION_LIKE} 2>/dev/null)
+	if [ -z "${MATCHED_COLLECTIONS}" ];then
+		echo "collection not found in ${DB},nothing done."
+		return
+	fi
+	for COLLECTION_NAME in ${MATCHED_COLLECTIONS} ;do
 		if [ ! -z "${COLLECTION_NAME}" ];then
 			#集合基本信息
 			get_collection_info

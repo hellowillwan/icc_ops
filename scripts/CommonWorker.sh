@@ -20,6 +20,33 @@ WEBROOT='/home/webs/'
 
 #functions
 
+sendemail () {
+	SNDEMAIL_LOG='/tmp/sendemail.log'
+	if [ -z "$4" ] ;then
+		echo -e "\n$(date) : parameters missing." >> $SNDEMAIL_LOG 
+		return 1
+	fi
+	
+	to_list=$1
+	subject=$2
+	content=$3
+	file=$4
+	#echo -e "\n$(date)\n${to_list}\n${subject}\n${content}" >> $SNDEMAIL_LOG
+	echo -e "\n$(date)\n${to_list}\n${subject}" >> $SNDEMAIL_LOG
+	#/usr/local/sbin/sendemail.py -s smtp.catholic.net.cn -f serveroperations@catholic.net.cn -u serveroperations@catholic.net.cn -p zd0nWmAkDH_tUwFl1wr \
+	/usr/local/sbin/sendemail.py -s smtp.icatholic.net.cn -f system.monitor@icatholic.net.cn -u system.monitor@icatholic.net.cn -p abc123 \
+		-t "$to_list" \
+		-S "$subject" \
+		-m "$content" \
+		-F "$file" |tee -a $SNDEMAIL_LOG 2>&1
+	ret=$?
+	if [ $ret -eq 0 ] ;then
+		echo "$(date) : mail sent." | tee -a $SNDEMAIL_LOG
+	else
+		echo "$(date) : send email fail." | tee -a $SNDEMAIL_LOG
+	fi
+}
+
 get_project_status ()
 {
 	if [ -z "$1" ];then
@@ -160,6 +187,7 @@ sync_demo_prod ()
 		--exclude='.svn' \
 		--exclude='*.log' \
 		--exclude='/cache/*' \
+		--exclude='/logs/*' \
 		"$1" "$2" 2>&1
 
 	ret=$?
@@ -234,7 +262,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		;;
 	supervisor_control)
 		source /usr/local/sbin/sc_supervisor_functions.sh
-		supervisor_control $p3 $p4
+		supervisor_control $p3 $p4 $p5
 		;;
 	ensure_ftp_account)
 		source /usr/local/sbin/sc_vsftpd_functions.sh
@@ -260,7 +288,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 $p8 $p9 return code:$ret
 		exit $ret
 	        ;;
-	cronjob_list|cronjob_add|cronjob_del|cronjob_disable|cronjob_enable|cronjob_runonce|cronjob_taillog)
+	cronjob_list|cronjob_add|cronjob_del|cronjob_disable|cronjob_enable|cronjob_runonce|cronjob_taillog|cronjob_maillog)
 		source /usr/local/sbin/sc_cronjob_functions.sh
 		$cmd $p3 $p4 $p5 $p6 $p7
 		ret=$?

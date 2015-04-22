@@ -161,13 +161,13 @@ log_analyst () {
 	#找出 当前周期内 && 大于等于阀值 && 动态请求 记录写入临时文件
 	grep "$DT" $LOG_FILE \
 		|awk -v rtt=$request_time_threshold \
-		'$NF >= rtt {printf "%-21s %-16s %-7s %-7s %-8s %-3s %-4s %s\n",substr($4,2),$1,$NF,$(NF-1),$(NF-3),$9,substr($6,2),$7}' \
+		'$NF >= rtt {printf "%-21s %-16s %-7s %-7s %-8s %-3s %-4s %s\n",substr($5,2),$1,$NF,$(NF-1),$(NF-3),$10,substr($7,2),$8}' \
 		|grep -v -i -P -e '\.(jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|avi|wma|wmv)(\?.*)?$' \
 		> $TMP_FILE_DNMC
 	#找出 当前周期内 && 大于等于阀值 && 静态请求 记录写入临时文件
 	grep "$DT" $LOG_FILE \
 		|awk -v rtt=$request_time_threshold \
-		'$NF >= rtt {printf "%-21s %-16s %-7s %-7s %-8s %-3s %-4s %s\n",substr($4,2),$1,$NF,$(NF-1),$(NF-3),$9,substr($6,2),$7}' \
+		'$NF >= rtt {printf "%-21s %-16s %-7s %-7s %-8s %-3s %-4s %s\n",substr($5,2),$1,$NF,$(NF-1),$(NF-3),$10,substr($7,2),$8}' \
 		|grep -i -P -e '\.(jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|avi|wma|wmv)(\?.*)?$' \
 		> $TMP_FILE_STDC
 	#大于阀值的记录条数

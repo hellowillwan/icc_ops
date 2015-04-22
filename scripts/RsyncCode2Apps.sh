@@ -38,6 +38,7 @@ RsyncCode2App ()
 		--exclude='.svn' \
 		--exclude='*.log' \
 		--exclude='*/cache/*' \
+		--exclude='*/logs/*' \
 		/home/webs/ \
 		${ip}::web/  &> /var/log/RsyncCode2APP-${ip}-$(eval $DT1).log
 
@@ -47,10 +48,8 @@ RsyncCode2App ()
 }
 
 #初始化代码源目录的属主和权限
-rm /home/webs/*/cache/* -rf &>/dev/null &
-for d in  /home/webs/* ; do
-	ls $d -l | grep -e '^drwxrwxrwx.*cache$' &>/dev/null || chmod -R 777 $d/cache &>/dev/null &
-done
+rm /home/webs/*/{cache,logs}/* -rf &>/dev/null &
+chmod -R 777 /home/webs/*/{cache,logs} &>/dev/null &
 chown -R ftpuser.ftpuser /home/webs/* &>/dev/null &
 
 #按crontab周期性执行同步
