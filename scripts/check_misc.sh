@@ -205,11 +205,16 @@ mongo_index () {
 		echo "Parameter missing: ip port db record_count_threshold"
 		return 1
 	fi
-	MONGO='/home/mongodb/bin/mongo'
 	IP="$1"
 	PORT="$2"
 	DB="$3"
 	record_count_threshold="$4"	#集合记录数量阀值
+
+	if [ "$PORT" = '57017' ];then
+		MONGO='/home/60000/bin/mongo'
+	else
+		MONGO='/home/mongodb/bin/mongo'
+	fi
 
 	#是否发邮件的参数,如果没有提供,默认是发的
 	if [ -z "$5" ];then
@@ -254,7 +259,7 @@ mongo_index () {
 
 out_conn () {
 	source /usr/local/sbin/ProcNetTCP_Parser.sh
-	count=$(core_netstat 2>/dev/null | awk '$3 !~ /10.0.0/ && $3 !~ /127.0.0.1/ && $3 !~ /0.0.0.0/' 2>/dev/null|wc -l)
+	count=$(core_netstat 2>/dev/null | awk '$3 !~ /10.0.0/ && $3 !~ /172.18.1/ && $3 !~ /127.0.0.1/ && $3 !~ /0.0.0.0/' 2>/dev/null|wc -l)
 	echo ${count:-0}
 }
 

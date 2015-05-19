@@ -40,7 +40,7 @@ sync_individually() {
 			return 1
 		else
 			#域名有配置过,从配置文件查找webroot目录名
-			subdir=$(grep -P -e "^[ |\t]*root[ |\t].*" ${vhostfile} | /usr/bin/head -n 1 | awk -F '/' '{print $4}')
+			subdir=$(grep -P -e "^[ |\t]*root[ |\t].*" ${vhostfile} | /usr/bin/head -n 1 | awk -F '/|;' '{print $4}')
 		fi
 	else
 		#不是合法域名

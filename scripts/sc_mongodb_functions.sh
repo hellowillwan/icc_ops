@@ -49,9 +49,9 @@ restart_mongos() {
 		CONFIG_DB='10.0.0.30:40000,10.0.0.31:40000,10.0.0.32:40000'
 		MONGOS_LOG='/home/mongo/log/mongos.log'
 	elif [ "$PORT" = "57017" ];then
-		MONGOS_BIN='/home/50000/mongodb/bin/mongos'
-		CONFIG_DB='10.0.0.30:50000,10.0.0.31:50000,10.0.0.32:50000'
-		MONGOS_LOG='/home/50000/log/mongos.log'
+		MONGOS_BIN='/home/60000/bin/mongos'
+		CONFIG_DB='10.0.0.30:60000,10.0.0.31:60000,10.0.0.32:60000'
+		MONGOS_LOG='/home/60000/log/mongos.log'
 	else
 		echo "Bad port parameter."
 		return 1
@@ -68,6 +68,8 @@ restart_mongos() {
 	fi
 
 	#start mongos
+	#mongos --port 27017 --configdb 10.0.0.30:40000,10.0.0.31:40000,10.0.0.32:40000 --logpath /home/mongo/log/mongos.log --logappend --fork
+	#mongos --port 57017 --configdb 10.0.0.30:60000,10.0.0.31:60000,10.0.0.32:60000 --logpath /home/60000/log/mongos.log --logappend --fork
 	sudo ${MONGOS_BIN} --port ${PORT} --configdb ${CONFIG_DB} --logpath ${MONGOS_LOG} --logappend --fork
 	#check
 	if [ $? -eq 0 ];then
@@ -214,10 +216,11 @@ mongo_query() {
 		DB="$1"				#umav3,ICCv1
 		COLLECTION_LIKE="$2"		#may be just id
 
-		MONGO="/home/mongodb/bin/mongo"	#这个变量为什么不能弄成全局的呢?因为不同函数可能在不同机器上执行,其环境竟然是不同的.
+		MONGO="/home/60000/bin/mongo"	#这个变量为什么不能弄成全局的呢?因为不同函数可能在不同机器上执行,不同机器的环境(比如Mongo版本)竟然是不同的.
 		MONGOS_IP='10.0.0.30'
-	
+
 		if [ "$DB" = "umav3" ];then
+			MONGO="/home/mongodb/bin/mongo"
 			MONGOS_PORT='27017'
 		elif [ "$DB" = "ICCv1" ] ;then
 			MONGOS_PORT='57017'

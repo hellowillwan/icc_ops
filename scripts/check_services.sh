@@ -2,7 +2,8 @@
 
 #env
 export PATH="/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin"
-alias mongo='/home/mongodb/bin/mongo'
+MONGO_CLIENT_v2='/home/mongodb/bin/mongo'
+MONGO_CLIENT_v3='/home/60000/bin/mongo'
 
 
 LINUXS='
@@ -78,26 +79,26 @@ MONGODBS='
 10.0.0.51:40001
 10.0.0.51:40002
 
-10.0.0.30:50000
-10.0.0.31:50000
-10.0.0.32:50000
+10.0.0.30:60000
+10.0.0.31:60000
+10.0.0.32:60000
 
 10.0.0.30:57017
 10.0.0.31:57017
 10.0.0.32:57017
 
-10.0.0.40:50000
-10.0.0.41:50000
-10.0.0.42:50000
+10.0.0.40:60000
+10.0.0.41:60000
+10.0.0.42:60000
 
-10.0.0.50:50000
-10.0.0.51:50000
-10.0.0.52:50000
+10.0.0.50:60000
+10.0.0.51:60000
+10.0.0.52:60000
 
-10.0.0.41:50001
-10.0.0.41:50002
-10.0.0.51:50001
-10.0.0.51:50002
+10.0.0.41:60001
+10.0.0.41:60002
+10.0.0.51:60001
+10.0.0.51:60002
 
 10.0.0.200:27017
 '
@@ -222,19 +223,26 @@ api_urls () {
 mongodb () {	
 	#check replica-set status
 	displayheader 'Checking Replica-set status'
-	#for port in 40001 40002 50001 50002;do
-	for connstr in 10.0.0.40:40000 10.0.0.50:40000 10.0.0.42:50000 10.0.0.52:50000;do
+	#for port in 40001 40002 60001 60002;do
+	for connstr in 10.0.0.40:40000 10.0.0.50:40000 10.0.0.42:60000 10.0.0.52:60000;do
 		#echo "rs.status()"|mongo 10.0.0.200:${port}|grep -e '"set"' -e '"name"' -e '"stateStr"'|awk -F':' '{print $2}'|tr -d '\n|"'| \
 		#sed "s/^ *//;s/,$/\n/"
+		if echo $connstr|grep -q '60000';then
+			MONGO_CLIENT="$MONGO_CLIENT_v3"
+		else
+			MONGO_CLIENT="$MONGO_CLIENT_v2"
+		fi
 
-		echo "rs.status()"|mongo ${connstr}|awk -F '"' '/"set"|"name"|"stateStr"/{printf "%-s,",$4}END{printf "\n"}'| \
+		echo "rs.status()"|${MONGO_CLIENT} ${connstr}|awk -F '"' '/"set"|"name"|"stateStr"/{printf "%-s,",$4}END{printf "\n"}'| \
 		sed "s/,/:: /;s/Y,/Y; /g;s/..$/\./;s/,/:/g"
 
-		echo 'db.printReplicationInfo()'|mongo ${connstr}|grep -e '^configured oplog size:' -e '^log length start to end:' \
+		echo 'db.printReplicationInfo()'|${MONGO_CLIENT} ${connstr}|grep -e '^configured oplog size:' -e '^log length start to end:' \
 		-e '^oplog first event time:' -e '^oplog last event time:'
 
-		echo 'db.printSlaveReplicationInfo()'|mongo ${connstr} \
-		|awk '/source:|syncedTo:|secs ago/{gsub("[ |\t]{1,}"," ");gsub("source:","\n");printf "%-s",$0} END{printf "\n\n"}'
+		#echo 'db.printSlaveReplicationInfo()'|${MONGO_CLIENT_v2} ${connstr} \
+		#|awk '/source:|syncedTo:|secs ago/{gsub("[ |\t]{1,}"," ");gsub("source:","\n");printf "%-s",$0} END{printf "\n\n"}'
+		echo 'db.printSlaveReplicationInfo()'|${MONGO_CLIENT_v3} ${connstr} \
+		|grep -v -e '^MongoDB shell version:' -e '^connecting to:' -e '^bye$' |tr -d '\n'|sed "s/source: /\n/g";echo;echo
 	done
 
 	#check mongodb

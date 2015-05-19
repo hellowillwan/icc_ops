@@ -195,7 +195,7 @@ cronjob_add() {
 		return 1
 	fi
 
-	echo "#${trigger_time} ${RUN_TIME_USER} ${INTERPRETER_BIN} ${script_file} ${parameters} >> ${log_file} 2>&1 #domain_name:${domain_name} #job_owner:${user_name} #cronjob_hash:${cronjob_hash}" >> ${cron_file}
+	echo "#${trigger_time} ${RUN_TIME_USER} . /etc/profile ; ${INTERPRETER_BIN} ${script_file} ${parameters} >> ${log_file} 2>&1 #domain_name:${domain_name} #job_owner:${user_name} #cronjob_hash:${cronjob_hash}" >> ${cron_file}
 	p_ret $? "计划任务添加成功,请刷新页面查看." "计划任务添加失败,请检查后重新提交."
 }
 
@@ -257,7 +257,7 @@ cronjob_runonce() {
 	run_user=$(echo "${line}"|awk '{print $6}')
 	#cmd_line=$(echo "${line}"|grep -o '^.*2>&1'|awk '{$1=$2=$3=$4=$5=$6="";print}'|sed "s/^ \+//")
 	#cmd_line=$(echo "${line}"|grep -P -o '/[^0-9]+php.+2>&1'|sed 's/\\//')
-	cmd_line=$(echo "${line}"|grep -P -o '/[^0-9]+(php|py).+2>&1'|sed 's/\\//')
+	cmd_line=$(echo "${line}"|grep -P -o '(\. /etc/profile ; )?/[^0-9]+(php|py).+2>&1'|sed 's/\\//')
 	#su ${run_user} -c "nohup ${cmd_line} &" &
 	su ${run_user} -c "nohup ${cmd_line} &" &>/dev/null &
 	#p_ret $? "已经开始运行,请密切关注日志的变化." "运行失败,请检查后重新提交."

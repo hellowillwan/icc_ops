@@ -1,21 +1,5 @@
 #/usr/bin/python
-# -*- coding: UTF-8 -*-
-"""
-脚本使用方法：
-python monitor_mongo.py --servers 10.0.0.30,10.0.0.31,10.0.0.32 --port 27017 --database umav3 --threshold 5 --notify youngyang@icatholic.net.cn,others@email.com --email sender@email.com --password abcd1234
-
-参数说明：
---servers设定你要监控的mongos，用英文逗号分隔多个
---port设定要监控的mongo的端口号
---database设定要监控的数据库
---threshold设定并发告警与自动索引的阈值
---notify设定通知人员电子邮件，用英文逗号分隔多个
---smtp设定发送告警邮箱的SMTP
---email设定发送告警电子邮件地址
---password设定发送告警的电子邮件密码
---sleep设定扫描的间歇时间，单位秒，默认5秒
---slow设定慢查询的时间阈值，单位秒，默认10秒
-"""
+# -*- coding: UTF-8 -*- 
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from pymongo import ASCENDING, DESCENDING
@@ -51,17 +35,17 @@ parser.add_option("-d", "--database", action="store", type="string",
                       dest="database", default=None,
                       help="""请使用-d --database设定要监控的数据库""")
 
-parser.add_option("-t", "--threshold", action="store", type="int",
+parser.add_option("-t", "--threshold", action="store", type="string",
                       dest="threshold", default=5,
                       help="""请使用-t --threshold设定并发告警与自动索引的阈值""")
 
 parser.add_option("-n", "--notify", action="store", type="string",
                       dest="notify", default=None,
-                      help="""请使用-n --notify设定通知人员电子邮件，用英文逗号分隔多个""")
+                      help="""请使用-nf --notify设定通知人员电子邮件，用英文逗号分隔多个""")
 
 parser.add_option("-m", "--smtp", action="store", type="string",
                       dest="smtp", default=None,
-                      help="""请使用-m --smtp设定发送告警邮箱的SMTP""")
+                      help="""请使用-smtp --smtp设定发送告警邮箱的SMTP""")
 
 parser.add_option("-e", "--email", action="store", type="string",
                       dest="email", default=None,
@@ -69,15 +53,11 @@ parser.add_option("-e", "--email", action="store", type="string",
 
 parser.add_option("-w", "--password", action="store", type="string",
                       dest="password", default=None,
-                      help="""请使用-w --password设定发送告警的电子邮件密码""")
+                      help="""请使用-pwd --password设定发送告警的电子邮件密码""")
 
 parser.add_option("-l", "--sleep", action="store", type="int",
                       dest="sleep", default=5,
-                      help="""请使用-l --sleep设定扫描的间歇时间，单位秒，默认5秒""")
-
-parser.add_option("-o", "--slow", action="store", type="int",
-                      dest="slow", default=10,
-                      help="""请使用-o --slow设定慢查询的时间阈值，单位秒，默认10秒""")
+                      help="""请使用-sl --sleep设定扫描的间歇时间，单位秒，默认5秒""")
 
 (options, args) = parser.parse_args()
 
@@ -175,7 +155,7 @@ while True:
                     waitingForLockNumber += 1
                 
                 if op.has_key(u'secs_running'):
-                    if int(op[u'secs_running']) >= options.slow:
+                    if int(op[u'secs_running']) >= 10:
                         if slow_query.has_key(op[u'ns']):
                             slow_query[op[u'ns']].append(op)
                         else:
@@ -238,9 +218,7 @@ while True:
                         if readPreference == 'unkown':
                             logging.debug("op readPreference is unkown, really?")
                             logging.debug(toJsonStr(op))
-                    
-                    if op_query != {}:
-                        warnning = unicode("%s可能问题查询语句为：%s 读取模式为：%s\n")%(warnning,json.dumps(op_query,skipkeys=True,cls=ComplexEncoder),readPreference)
+                    warnning = unicode("%s可能问题查询语句为：%s 读取模式为：%s\n")%(warnning,json.dumps(op_query,skipkeys=True,cls=ComplexEncoder),readPreference)
                 warnning = "%s\n\n"%(warnning,)
         
         #切换到自动优化索引模式 对于集合进行索引处理
@@ -278,10 +256,8 @@ while True:
                                             collction_name = '.'.join(str(collection[0]).split('.')[1:])
                                             logging.debug(collction_name)
                                             rst = db[collction_name].create_index(index,background=True)
-                                            indexes = db[collction_name].index_information()
-                                            if not rst in indexes:
-                                                create_index_list.append(index)
-                                                indexInfo = unicode("%s因性能问题自动为集合：%s，创建索引：%s,执行结果：%s\n")%(indexInfo,collection[0],json.dumps(index,skipkeys=True,cls=ComplexEncoder),json.dumps(rst,skipkeys=True,cls=ComplexEncoder))
+                                            create_index_list.append(index)
+                                            indexInfo = unicode("%s因性能问题自动为集合：%s，创建索引：%s,执行结果：%s\n")%(indexInfo,collection[0],json.dumps(index,skipkeys=True,cls=ComplexEncoder),json.dumps(rst,skipkeys=True,cls=ComplexEncoder))
                                         else:
                                             indexInfo = unicode("非%s集合：%s"%(database,str(collection[0])))
                                     except Exception,e:

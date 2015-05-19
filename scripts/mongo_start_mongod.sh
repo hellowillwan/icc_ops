@@ -40,6 +40,7 @@ mongod_6w ()
 	--dbpath /home/60000/data \
 	--logpath /home/60000/log/mongod.log \
 	--logappend \
+	--nssize 2000 \
 	--fork
 
 

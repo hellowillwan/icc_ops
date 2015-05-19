@@ -97,28 +97,44 @@ kill_mongo_op_2 () {
 	PORT=$1
 	#DB='ICCv1'
 	DB=$2
+	if [ "$3" -gt 10 ];then
+		SECS_RUNNING="$3"
+	else
+		SECS_RUNNING=3600
+	fi
 	
 	for IP in ${MONGOS} ;do
-		#echo "db.currentOp({'ns' : /^${DB}./ , 'secs_running' : { '\$gt' : 0 }})" | $MONGO ${IP}:${PORT} 
-		#continue
-		#echo "test for continue"
-		#以集合名称作为查询条件,复合其他条件比如查询语句类型,查询语句执行时间!!!
-		for opid in $( echo "db.currentOp({'ns' : /^${DB}./ , 'secs_running' : { '\$gt' : 3600 }})" | $MONGO ${IP}:${PORT} \
-				|grep -e '"opid"'|awk -F'"' '{print $4}')
+		#
+		#查询每一个 MongoS 实例里的 Op
+		#查询条件:
+		#	ns		库，集合，目前只匹配库名 $DB
+		# 	secs_running	执行时间 $SECS_RUNNING
+		#
+		#记录并杀掉符合条件的 Op
+		#
+		for opid in $( echo "db.currentOp({'ns' : /^${DB}./ , 'secs_running' : { '\$gt' : ${SECS_RUNNING} }})" | $MONGO ${IP}:${PORT} \
+				| grep -v -e 'MongoDB shell version:' -e 'connecting to:' -e '^bye$' \
+				| grep -v -e '{ "inprog" : \[ \] }' \
+				| tee -a /var/log/killop.log \
+				| grep -e '"opid"'|awk -F'"' '{print $4}')
 		do
 			#记录
-			echo "db.currentOp({'opid' : '${opid}'})" | $MONGO ${IP}:${PORT}
+			#echo "将要杀掉的Op："
+			#下面这个查询,按opid竟然取不到Op信息
+			#echo "db.currentOp({'opid' : '${opid}'})" | $MONGO ${IP}:${PORT} | grep -v -e 'MongoDB shell version:' -e 'connecting to:' -e '^bye$'
 			#杀掉
 			#echo "db.killOp('$opid')\" | $MONGO ${IP}:${PORT} "
-			echo "db.killOp('$opid')" | $MONGO ${IP}:${PORT}
+			echo "db.killOp('$opid')" | $MONGO ${IP}:${PORT} |grep -v -e 'MongoDB shell version:' -e 'connecting to:' -e '^bye$'
 			#结果
 			if [ $? -eq 0 ];then
 				echo "killOp done."
 			else
 				echo "killOp fail."
 			fi
-			echo
+			#记录kill操作的时间点
+			date
 		done
+		echo
 	done
 }
 
@@ -140,8 +156,9 @@ if [ -z "$1" ];then
 	get_mongo_currentops ${PORT} ${DB} |grep '"ns"'|awk -F '"' '{print $4}'|sort|uniq -c|sort -k1,1nr|head -n 50
 else
 	if [ "$1" = 'kill_mongo_op_2' ];then
-		$1 27017 umav3
-		$1 57017 ICCv1 
+		$1 27017 umav3 3600
+		$1 57017 ICCv1 3600
+		$1 57017 mapreduce 3600
 	else
 		COLLECTION="$1"
 		read -p "Are you sure to kill all the queries to collection ${COLLECTION} ? (y/n)" answer
