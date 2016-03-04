@@ -192,18 +192,28 @@ find_collection() {
 	#		{__CREATE_TIME__:-1}				#sort		e19fQ1JFQVRFX1RJTUVfXzotMX0=
 	#	).limit(10).skip(0);"
 	#
-	local query_str="db.getCollection('${COLLECTION_NAME}').find(
+	# 符合查询条件的文档数量
+	local query_str_1="db.getCollection('${COLLECTION_NAME}').count(${criteria});"
+	local query_rst_1=$(echo "${query_str_1}" \
+			|${MONGO} ${MONGOS_IP}:${MONGOS_PORT}/${DB} \
+			|grep -v -e 'MongoDB shell version' -e 'connecting to:' -e '^bye$' -e '^[ |\t]*$' )
+	#echo -e "查询语句:  " ${query_str_1}
+	echo -e "符合查询条件的文档数量:  " ${query_rst_1}
+	#
+	# 符合条件的记录
+	#
+	local query_str_2="db.getCollection('${COLLECTION_NAME}').find(
 			${criteria},
 			${projection}
 		).sort(
 			${sort}
 		).limit(${limit}).skip(${skip});"
-	local query_rst=$(echo "${query_str}" \
+	local query_rst_2=$(echo "${query_str_2}" \
 			|${MONGO} ${MONGOS_IP}:${MONGOS_PORT}/${DB} \
 			|grep -v -e 'MongoDB shell version' -e 'connecting to:' -e '^bye$' -e '^[ |\t]*$' \
 			|awk 'BEGIN{ORS="</xmp><br><xmp>"}{print}' |sed 's/<br><xmp>$//' )
-	echo -e "查询语句:\n" ${query_str}
-	echo -e "查询结果:\n<xmp>" ${query_rst}
+	echo -e "查询语句:\n" ${query_str_2}
+	echo -e "查询结果:\n<xmp>" ${query_rst_2}
 }
 
 #查询集合主逻辑
@@ -221,10 +231,15 @@ mongo_query() {
 
 		if [ "$DB" = "umav3" ];then
 			MONGO="/home/mongodb/bin/mongo"
-			MONGOS_PORT='27017'
+			MONGOS_PORT='40000'
+			MONGOS_IP='10.0.0.41'
 		elif [ "$DB" = "ICCv1" ] ;then
 			MONGOS_PORT='57017'
 		elif [ "$DB" = "mapreduce" ] ;then
+			MONGOS_PORT='57017'
+		elif [ "$DB" = "bda" ] ;then
+			MONGOS_PORT='57017'
+		elif [ "$DB" = "test" ] ;then
 			MONGOS_PORT='57017'
 		else
 			echo "DB not exist"
@@ -238,6 +253,7 @@ mongo_query() {
 		[ $# -ge 7 ] && local skip="$7"		|| local skip=0
 	fi
 
+	echo 生产环境
 	#提供的集合名称,很可能是不带前缀的,这里检查所有匹配的集合,暂时不限制数量了
 	MATCHED_COLLECTIONS=$(echo 'show collections'|${MONGO} ${MONGOS_IP}:${MONGOS_PORT}/${DB} 2>/dev/null|grep ${COLLECTION_LIKE} 2>/dev/null)
 	if [ -z "${MATCHED_COLLECTIONS}" ];then
@@ -254,6 +270,200 @@ mongo_query() {
 			echo "collection not found in ${DB},nothing done."
 		fi
 	done
+}
+
+# 补全集合名称
+format_collection_name () {
+		# 补全集合名称
+		if echo -n "$1" |grep -q -e '^idatabase_collection_';then
+			echo "$1"
+		else
+			echo "idatabase_collection_${1}"
+		fi
+}
+
+# 补全集合名称-uma
+format_collection_name_uma() {
+		# 补全集合名称
+		if echo -n "$1" |grep -q -e '^iDatabase\.';then
+			echo "$1"
+		else
+			echo "iDatabase.${1}"
+		fi
+}
+
+# 同步Mongdb集合 (双向：线上到内网、内网到线上)
+mongo_sync () {
+	if [ -z "$4" ];then
+		echo "Parameter missing,usage: $0 download|upload 0|1 db_name_for_sync collections_for_sync"
+		return 1
+	fi
+
+	WORKINGDIR='/tmp/mongo_sync'
+	mkdir -p $WORKINGDIR &>/dev/null
+	
+	local DIRECTION="$1"
+	local LOG="$2"
+	local DB="$3"
+	local COLLECTIONS=$(echo -n "$4"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	if [ "$LOG" -eq 1 ] ;then
+		# 记录集合同步状态
+		local STATS_FILE='/var/log/mongo_sync.stats'
+		# 停止supervisor mongo-connector
+		if [ "$DIRECTION" = 'download' ];then
+			local proc_name='mongo-connector-icc2office:mongo-connector-icc2office0'
+		elif [ "$DIRECTION" = 'upload' ];then
+			local proc_name='mongo-connector-bda_from_office:mongo-connector-bda_from_office0'
+		else
+			:
+		fi
+		/usr/bin/supervisorctl -c /etc/supervisor.conf stop "${proc_name}" &>/dev/null
+	fi
+
+
+	if [ ${DIRECTION} = 'download' ];then
+		SRC_ENV='产生'
+		SRC_HOST='10.0.0.30'
+		SRC_PORT=57017
+		if [ "${DB}" = 'umav3' ];then
+			SRC_HOST='10.0.0.41'
+			SRC_PORT=40000
+		fi
+		DST_ENV='dev'
+		DST_HOST='10.0.0.200'
+		DST_PORT=37017
+	elif [ ${DIRECTION} = 'upload' ];then
+		SRC_ENV='dev'
+		SRC_HOST='10.0.0.200'
+		SRC_PORT=37017
+		DST_ENV='生产'
+		DST_HOST='10.0.0.30'
+		DST_PORT=57017
+		if [ "$DB" = 'ICCv1' ];then
+			echo 'upload any collection to ICCv1 was prohibited,nothing done,exit.'
+			return 1
+		fi
+	else
+		echo 'unkonw direction.'
+		return 1
+	fi
+
+	#dump from SRC_HOST:SRC_PORT
+	for coll_name in $COLLECTIONS ;do
+		# 补全集合名称
+		[ "${DB}" = 'ICCv1' ] && coll_name=$(format_collection_name "$coll_name")
+		[ "${DB}" = 'umav3' ] && coll_name=$(format_collection_name_uma "$coll_name")
+
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#dumping" >> $STATS_FILE
+		echo -n "导出 ${SRC_ENV}环境 ${DB}.${coll_name} : "
+		/home/60000/bin/mongodump -h ${SRC_HOST} --port ${SRC_PORT} -d "${DB}" -c "${coll_name}" -o $WORKINGDIR &> /dev/null
+		if [ "$?" -eq 0 ];then
+			local result="成功"
+			[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#dump_ok" >> $STATS_FILE
+		else
+			local result="失败"
+			[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#dump_fail" >> $STATS_FILE
+		fi
+		echo -en "$result 文档数量 : "
+		echo "db.getCollection('${coll_name}').count()" | /home/60000/bin/mongo ${SRC_HOST}:${SRC_PORT}/${DB}|grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye'
+	done
+	
+	echo
+	
+	#restore to DST_HOST:DST_PORT
+	for coll_name in $COLLECTIONS ;do
+		# 补全集合名称
+		[ "${DB}" = 'ICCv1' ] && coll_name=$(format_collection_name "$coll_name")
+		[ "${DB}" = 'umav3' ] && coll_name=$(format_collection_name_uma "$coll_name")
+
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#restoring" >> $STATS_FILE
+		echo -n "导入 ${DST_ENV} 环境 ${DB}.${coll_name} : "
+		if [ -s "${WORKINGDIR}/"${DB}"/${coll_name}.bson" ] ;then
+			#如果bson文件大于零,即集合有数据,进行导入目的环境
+			/home/60000/bin/mongorestore --drop -h ${DST_HOST} --port ${DST_PORT} \
+				-d "${DB}" -c "${coll_name}" ${WORKINGDIR}/"${DB}"/${coll_name}.bson &> /dev/null
+			if [ "$?" -eq 0 ];then
+				local result="成功"
+				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#restore_ok" >> $STATS_FILE
+			else
+				local result="失败"
+				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#restore_fail" >> $STATS_FILE
+			fi
+			echo -en "$result 文档数量 : "
+			echo "db.getCollection('${coll_name}').count()" | /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DB}|grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye'
+		else
+			[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#no_file_to_restore" >> $STATS_FILE
+			#bson文件为空
+			echo "集合不存在或为空,无法导入"
+		fi
+	done
+
+	if [ "$LOG" -eq 1 ] ;then
+		# 启动supervisor mongo-connector
+		/usr/bin/supervisorctl -c /etc/supervisor.conf start "${proc_name}" &>/dev/null
+	fi
+}
+
+# 检查 同步Mongdb集合 的状态(双向：线上到内网、内网到线上)
+check_mongo_sync() {
+	if [ -z "$3" ];then
+		echo "Parameter missing,usage: $0 download|upload db_name_for_sync collections_for_sync"
+		return 1
+	fi
+
+	local DIRECTION="$1"
+	local DB="$2"
+	local COLLECTIONS=$(echo -n "$3"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	local STATS_FILE='/var/log/mongo_sync.stats'
+	awk -F'#' "/#${DIRECTION}#${DB}#${COLLECTIONS}#/{print \$NF}" $STATS_FILE |tail -n 1
+}
+
+# 复制Mongdb集合到另一个集合
+mongo_copy () {
+	if [ -z "$3" ];then
+		echo "Parameter missing,usage: $0 db_name_for_sync src_collections dst_collections"
+		return 1
+	fi
+
+	WORKINGDIR='/tmp/mongo_sync'
+	mkdir -p $WORKINGDIR &>/dev/null
+	
+	local DB="$1"
+	#local COLLECTIONS=$(echo -n "$2"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	local SRC_COLLECTIONS=$(echo -n "$2"|sort|uniq|grep -v -P '^[ |\t]*$')
+	local DST_COLLECTIONS=$(echo -n "$3"|sort|uniq|grep -v -P '^[ |\t]*$')
+	
+	# 补全集合名称
+	SRC_COLLECTIONS=$(format_collection_name "$SRC_COLLECTIONS")
+	DST_COLLECTIONS=$(format_collection_name "$DST_COLLECTIONS")
+	# 检查源集合 与 目标集合 是否相同
+	if [ "${SRC_COLLECTIONS}" = "${DST_COLLECTIONS}" ];then
+		echo "源集合与目标集合相同,退出"
+		return 1
+	fi
+
+	#dump
+	echo -n "导出 源集合 ${DB}.${SRC_COLLECTIONS} : "
+	/home/60000/bin/mongodump -h 10.0.0.30 --port 57017 -d "${DB}" -c "${SRC_COLLECTIONS}" -o $WORKINGDIR &> /dev/null
+	local result=$(p_ret $? "成功" "失败"|tr -d "\n")
+	echo -en "$result 文档数量 : "
+	echo "db.${SRC_COLLECTIONS}.count()" | /home/60000/bin/mongo 10.0.0.30:57017/${DB}|grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye'
+	
+	echo
+	
+	#copy 2 dst_collections
+	echo -n "复制到目标集合 ${DB}.${DST_COLLECTIONS} : "
+	if [ -s "${WORKINGDIR}/"${DB}"/${SRC_COLLECTIONS}.bson" ] ;then
+		#如果bson文件大于零,即集合有数据,进行导入内网
+		/home/60000/bin/mongorestore --drop -h 10.0.0.30 --port 57017 \
+			-d "${DB}" -c "${DST_COLLECTIONS}" ${WORKINGDIR}/"${DB}"/${SRC_COLLECTIONS}.bson &> /dev/null
+		local result=$(p_ret $? "成功" "失败"|tr -d "\n")
+		echo -en "$result 文档数量 : "
+		echo "db.${DST_COLLECTIONS}.count()" | /home/60000/bin/mongo 10.0.0.30:57017/${DB}|grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye'
+	else
+		#bson文件为空
+		echo "源集合不存在或为空,无法复制"
+	fi
 }
 
 #mongo_query ICCv1 545aee0948961931768b4a6f

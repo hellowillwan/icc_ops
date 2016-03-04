@@ -12,10 +12,13 @@ p_ret() {
 }
 
 sync_individually() {
+	#
+	# 分发单个项目到所有apps
+	#
 	#usage: echo 72cf40a112e106565e2cbcb4cebec8a0 sync_a_project_code haoyadatestdemo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200
-	local APP_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13' '10.0.0.1' '10.0.0.2')
+	local APP_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13' '10.0.0.14' '10.0.0.24' )
 	local PXY_IP_ARY=('10.0.0.1' '10.0.0.2')
-	local parameter='-vrptl --delete'
+	local parameter='-vrptl --delete --delete-excluded '
 
 	if [ -z "$1" ];then
 		echo "project_code or hostname missing."
@@ -32,7 +35,7 @@ sync_individually() {
 	if echo ${project_code}|grep -e '\.' -q  && echo ${project_code}|grep -P -e '\.(com|cn|org|net)$' -q ;then
 		#是合法域名
 		hostname=${project_code}
-		NGXCONF_DIR='/home/nginx/'
+		NGXCONF_DIR='/home/app_nginx_conf/'
 		vhostfile=$(grep -rl -P -e "^[ |\t]*server_name.*[ |\t]${hostname}[ |\t|;]" $NGXCONF_DIR | /usr/bin/head -n 1)
 		if [ ! -f "$vhostfile" ];then
 			#不是配置过的域名,退出
@@ -64,20 +67,23 @@ sync_individually() {
 	#按webroot目录,分发项目代码
 	echo -e "分发 /home/webs/${subdir}/ 目录 :\n"
 	for ip in ${APP_IP_ARY[@]} ;do
-		if [ "${ip}" = '10.0.0.1' -o "${ip}" = '10.0.0.2' ];then
-			if ! echo -n ${subdir}|grep -q -i -e '^icc' -e 'cloud' ;then
-				# 如果不是icc这个项目,不要分发到 10.0.0.1 和 10.0.0.2.
-				continue
-			fi
-		fi
+		# 现在 10.0.0.1 和 10.0.0.2 也要跑php了,代码要实时同步,注释掉下面这段
+		#if [ "${ip}" = '10.0.0.1' -o "${ip}" = '10.0.0.2' ];then
+		#	if ! echo -n ${subdir}|grep -q -i -e '^icc' -e 'cloud' ;then
+		#		# 如果不是icc这个项目,不要分发到 10.0.0.1 和 10.0.0.2.
+		#		continue
+		#	fi
+		#fi
 
+		#分发项目代码 并 清理项目应用程序缓存 连php写的日志也一并排除并删除,日志不应该放在代码目录 
+		rm /home/webs/${subdir}/cache/* -rf &>/dev/null
 		/bin/env USER='backup' RSYNC_PASSWORD='123456' /usr/bin/rsync \
 		${parameter} \
 		--blocking-io \
 		--exclude='.svn' \
+		--exclude='.git' \
 		--exclude='*.log' \
-		--exclude='/cache/*' \
-		--exclude='/logs/*' \
+		--exclude='*/logs/*' \
 		/home/webs/${subdir}/ \
 		${ip}::web/${subdir}/
 
@@ -89,13 +95,17 @@ sync_individually() {
 		for ip in ${PXY_IP_ARY[@]} ;do
 			echo "${hostname} /" |/usr/bin/gearman -h 211.152.60.33 -f "purge_${ip}" -b
 		done
-		echo -e "\n清理缓存: ${hostname} 已提交到队列."
+		if grep -q -i -e "${hostname}" /var/lib/cdn_enabled_hosts ;then
+			echo -e "\n清理源站及CDN缓存: ${hostname} 已提交到队列."
+		else
+			echo -e "\n清理缓存: ${hostname} 已提交到队列."
+		fi
 	fi
 }
 
 
 #下面是用配置文件里的所有域名测试这个函数的正确性
-#for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' /home/nginx/ \
+#for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' /home/app_nginx_conf/ \
 #                        |sed 's#server_name##;s#;.*$##' \
 #                        |tr ' |\t' '\n' \
 #                        |sort|uniq \

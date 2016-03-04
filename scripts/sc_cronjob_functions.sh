@@ -56,7 +56,7 @@ chk_hostname() {
 
 	if echo ${hostname}|grep -e '\.' -q  && echo ${hostname}|grep -P -e '\.(com|cn|org|net)$' -q ;then
 		#是合法域名
-		NGXCONF_DIR='/home/nginx/'
+		NGXCONF_DIR='/home/app_nginx_conf/'
 		vhostfile=$(grep -rl -P -e "^[ |\t]*server_name.*[ |\t]${hostname}[ |\t|;]" $NGXCONF_DIR | /usr/bin/head -n 1)
 		if [ ! -f "$vhostfile" ];then
 			#不是配置过的域名,退出
@@ -82,7 +82,7 @@ get_dir_from_hostname() {
 	fi
 
 	#域名经过检查,确认有配置过,从配置文件查找webroot目录名
-	NGXCONF_DIR='/home/nginx/'
+	NGXCONF_DIR='/home/app_nginx_conf/'
 	vhostfile=$(grep -rl -P -e "^[ |\t]*server_name.*[ |\t]${hostname}[ |\t|;]" $NGXCONF_DIR | /usr/bin/head -n 1)
 	webdir=$(grep -P -e "^[ |\t]*root[ |\t].*" ${vhostfile} | /usr/bin/head -n 1 | awk -F '/' '{printf "/%s/%s/%s", $2,$3,$4}')
 	echo $webdir
@@ -194,6 +194,8 @@ cronjob_add() {
 		echo "不能添加重复的计划任务,请检查后重新提交."
 		return 1
 	fi
+
+	if [ "$6" = 'hadoop' ] ;then local RUN_TIME_USER='hadoop' ; fi
 
 	echo "#${trigger_time} ${RUN_TIME_USER} . /etc/profile ; ${INTERPRETER_BIN} ${script_file} ${parameters} >> ${log_file} 2>&1 #domain_name:${domain_name} #job_owner:${user_name} #cronjob_hash:${cronjob_hash}" >> ${cron_file}
 	p_ret $? "计划任务添加成功,请刷新页面查看." "计划任务添加失败,请检查后重新提交."

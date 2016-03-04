@@ -41,10 +41,13 @@ restart_nginx_php() {
 }
 
 restart_all_nginx_php() {
-	local APPS_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13')
+	local APPS_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13' '10.0.0.14')
 
 	for ip in ${APPS_IP_ARY[@]} ;do
-		echo ${localkey} restart_nginx_php | gearman -h 10.0.0.200 -f "CommonWorker_${ip}"
+		#echo ${localkey} restart_nginx_php | gearman -h 10.0.0.200 -f "CommonWorker_${ip}"
+		# RELOAD apps nginx of all docker containers
+		echo "${ip}"|grep -q -P -e '^10.0.0.(1|2|24)$' && break #没有docker容器在运行,忽略
+		echo $localkey php_restart | gearman -f "CommonWorker_${ip}"
 	done
 
 	echo ${localkey} check_services nginx_php | gearman -h 10.0.0.200 -f "CommonWorker_10.0.0.200"

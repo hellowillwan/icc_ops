@@ -11,15 +11,29 @@ export PATH="/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin"
 LOGFILE='/var/log/CommonWorker.log'
 DT2="date '+%Y-%m-%d %H:%M:%S'"
 localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
-proxy_cfg_path='/home/ngx_proxy_conf/'
+proxy_cfg_path='/home/proxy_nginx_conf/'
 proxy_cfg_template='/usr/local/share/commonworker/proxy_cfg_template'
-proxy_cache_cfg='/home/ngx_proxy_conf/cache-zone.conf'
-app_cfg_path='/home/nginx/'
+proxy_cache_cfg='/home/proxy_nginx_conf/cache-zone.conf'
+app_cfg_path='/home/app_nginx_conf/'
 app_cfg_template='/usr/local/share/commonworker/app_cfg_template'
 WEBROOT='/home/webs/'
 
 #functions
 
+# 根据返回码输出日志
+p_ret() {
+	if [ -z "$3" ];then
+		return 1
+	fi
+
+	if [ "$1" -eq 0 ];then
+		echo -e "$2"
+	else
+		echo -e "$3"
+	fi
+}
+
+# 发送邮件
 sendemail () {
 	SNDEMAIL_LOG='/tmp/sendemail.log'
 	if [ -z "$4" ] ;then
@@ -135,13 +149,19 @@ add_project ()
 	else
 		#项目是否是demo
 		if echo "$project_code" | grep -e 'demo$' &>/dev/null ;then
+			# 配置文件路径
 			subpath='demo/'
 		else
+			# 配置文件路径
 			subpath='vhost/'
 		fi
+		project_domain_static="$project_code.umaman.net"	#专门服务静态资源的域名
+		# 配置模板中需要替换的变量
+		PROJECT_DOMAIN="$project_domain $project_domain_static"
+		CACHE_ZONE_NAME="$project_domain"
 
 		#生成项目app配置
-		cat $app_cfg_template | sed -e "s/PROJECT_DOMAIN/$project_domain/g" \
+		cat $app_cfg_template | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
 						-e "s/PROJECT_CODE/$project_code/g" > $app_cfg_path$subpath$project_code.conf
 		if [ $? -gt 0 ];then
 			app_cfg创建失败,返回
@@ -161,7 +181,8 @@ add_project ()
 		echo "proxy_cache_path /home/proxy/cache/$project_domain levels=1:2 keys_zone=$project_domain:200m inactive=12h max_size=10g;" \
 		>> $proxy_cache_cfg
 		#proxy_cfg
-		cat $proxy_cfg_template | sed -e "s/PROJECT_DOMAIN/$project_domain/g" > $proxy_cfg_path$subpath$project_code.conf 
+		cat $proxy_cfg_template | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
+						-e "s/CACHE_ZONE_NAME/$CACHE_ZONE_NAME/g" > $proxy_cfg_path$subpath$project_code.conf 
 		if [ $? -gt 0 ];then
 			#proxy_cfg创建失败,返回
 			echo "Deployer : $project_code proxy_cfg creating with error,return code:2"
@@ -170,7 +191,8 @@ add_project ()
 
 		echo "Deployer : $project_code now configured,return code:0"
 		#reload apps & proxies
-		#/usr/local/sbin/RsyncNgxCfg.sh
+		# 不需要在这里做,cut 添加完项目后会执行 reload_nginx
+		#/usr/local/sbin/RsyncCfg.sh
 		return 0
 	fi
 }
@@ -246,23 +268,19 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	reload_nginx)
 		#/usr/bin/func 'app0[1-4]' call command run "/usr/sbin/nginx -s reload"
 		#/usr/bin/func 'proxy0[1-2]' call command run "/usr/local/tengine/sbin/nginx -s reload"
-		/usr/local/sbin/RsyncNgxCfg.sh $p3 2>&1
+		/usr/local/sbin/RsyncCfg.sh $p3 2>&1
 		logger Deployer $p1 $p2 $p3 return code:$?
 	        ;;
 	check_services)
 		/usr/local/sbin/check_services.sh $p3 2>&1
 		;;
-	supervisor_config)
-		source /usr/local/sbin/sc_supervisor_functions.sh
-		supervisor_config $p3 $p4
-		;;
 	supervisor_status)
 		source /usr/local/sbin/sc_supervisor_functions.sh
 		supervisor_status 2>&1
 		;;
-	supervisor_control)
+	supervisor_config|supervisor_control|list_collections|add_collections)
 		source /usr/local/sbin/sc_supervisor_functions.sh
-		supervisor_control $p3 $p4 $p5
+		$cmd $p3 $p4 $p5
 		;;
 	ensure_ftp_account)
 		source /usr/local/sbin/sc_vsftpd_functions.sh
@@ -280,9 +298,11 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
 	        ;;
-	mongo_query)
+	mongo_query|mongo_sync|check_mongo_sync)
 		source /usr/local/sbin/sc_mongodb_functions.sh
 		#mongo_query	db col query projection sort limit skip
+		#mongo_sync	download|upload db_name_for_sync collections_for_sync
+		#check_mongo_sync	download|upload db_name_for_sync collections_for_sync
 		$cmd $p3 $p4 $p5 $p6 $p7 $p8 $p9
 		ret=$?
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 $p8 $p9 return code:$ret
@@ -290,7 +310,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	        ;;
 	cronjob_list|cronjob_add|cronjob_del|cronjob_disable|cronjob_enable|cronjob_runonce|cronjob_taillog|cronjob_maillog)
 		source /usr/local/sbin/sc_cronjob_functions.sh
-		$cmd $p3 $p4 $p5 $p6 $p7
+		$cmd $p3 $p4 $p5 $p6 $p7 $p8
 		ret=$?
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 return code:$ret
 		exit $ret
@@ -301,6 +321,10 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		ret=$?
 		logger CommonWorker $p1 $p2 return code:$ret
 		exit $ret
+	        ;;
+	flush_alicdn)
+		source /usr/local/sbin/sc_cdn_functions.sh
+		$cmd $p3 $p4 | logger
 	        ;;
 	*)
 		echo "unknow command,return code:3"

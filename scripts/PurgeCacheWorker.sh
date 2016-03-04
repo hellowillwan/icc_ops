@@ -8,6 +8,9 @@
 #$GEARMAN -w -f $FUNCTION_NAME -- $0
 #测试方法
 # clear;find /home/proxy/cache/syoss.umaman.com/;echo 'syoss.umaman.com' '/'|  PurgeCacheWorker.sh ;tail -n 1 /var/log/purgecacheworker.log;find /home/proxy/cache/syoss.umaman.com/
+# 预期结果：会看到缓存目录的变化
+# echo syoss.umaman.com /c/ | /usr/bin/gearman -h 10.0.0.200 -f "purge_10.0.0.1"
+# 预期结果：2015-09-24 14:38:05     Host:syoss.umaman.com   Path:/c/        2015-09-24 14:39:08 目录清除成功.
 #已修正:多域名站点清缓存的时,传入的域名会被重新取值为配置文件里cache_zone的名字,在清除指定location的缓存时,会不正常,清除整站及单个URL没影响.
 
 NGXCONF_DIR='/usr/local/tengine/conf/'
@@ -43,6 +46,14 @@ purgecache() {
 	fi
 }
 
+flush_alicdn() {
+	# 刷新CDN缓存
+	local hostname=$1
+	local location=$2
+	local localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
+	echo $localkey flush_alicdn $hostname $location | /usr/bin/gearman -h 10.0.0.200 -f "CommonWorker_10.0.0.200" -b
+}
+
 while read hostname location ; do
 	if [ -z "$hostname" ] || [ "$hostname" = ' ' ];then
 		echo -e "$(eval $DT2)\tHost:${hostname}\tPath:${location}\t主机名不合法" >> $LOGFILE
@@ -62,5 +73,8 @@ while read hostname location ; do
 				echo "站点缓存目录不存在." >> $LOGFILE
 			fi
 		fi
+
+		# 刷新CDN缓存
+		flush_alicdn $hostname $location
 	fi
 done

@@ -60,8 +60,13 @@ export_data () {
 	FIELDS=$(get_collection_fields ${DB} ${COLLECTION})
 	
 	#导出
-	${MONGOEXPORT} -h ${MONGOS_IP} --port ${MONGOS_PORT} -d ${DB} -c ${COLLECTION} --csv -f ${FIELDS} -o ${TMP_FILE} 
-	
+		#-q '{$or:[{"hid":"4446fcecdf854721b8388f323c6fe4d2"},{"hid":"29769ba0b41f4576bef5be0807e8c4c2"}]}' \
+		#-q '{ "hid": { $in: ["4446fcecdf854721b8388f323c6fe4d2","29769ba0b41f4576bef5be0807e8c4c2" ] } }' \
+	${MONGOEXPORT} -h ${MONGOS_IP} --port ${MONGOS_PORT} \
+		-d ${DB} -c ${COLLECTION} \
+		--csv -f ${FIELDS} \
+		-o ${TMP_FILE}
+
 	if [ -f ${TMP_FILE} ];then
 		#转码压缩
 		cat ${TMP_FILE} |iconv -f utf-8 -t gb18030 |gzip > ${DATA_FILE}
@@ -83,7 +88,8 @@ else
 	COLLECTION="$2"
 
 	if [ "$DB" = "umav3" ];then
-		MONGOS_PORT='27017'
+		MONGOS_IP='10.0.0.41'	#uma数据库有变更:sharded cluster --> replset,这里是主库ip:port
+		MONGOS_PORT='40000'
 	elif [ "$DB" = "ICCv1" ] ;then
 		MONGOS_PORT='57017'
 	else

@@ -13,10 +13,13 @@ hostnames='
 oauth.dianping.com
 api.dianping.com
 open.weixin.qq.com
+api.weixin.qq.com
+c2.topchef.net.cn
+jiale.topchef.net.cn
 '
 
 for hostname in $hostnames ;do
-	ipaddr=$(dig @202.96.209.133 $hostname 2>/dev/null|grep -e "^${hostname}.*A" 2>/dev/null |awk '{print $NF}' \
+	ipaddr=$(dig @202.96.209.133 $hostname 2>/dev/null | grep -P '\tA\t' 2>/dev/null | head -n 1 |awk '{print $NF}' \
 		|grep -P -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' 2>/dev/null)
 	#echo -e "${ipaddr}\t${hostname}"
 	if [ -z "$ipaddr" ];then
@@ -45,7 +48,7 @@ done
 #配置在集群上的域名
 
 readonly my_ipaddr='10.0.0.1'
-for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' /etc/nginx/ \
+for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' /usr/local/tengine/conf/ \
 			|sed 's#server_name##;s#;.*$##' \
 			|tr ' |\t' '\n' \
 			|sort|uniq \

@@ -35,17 +35,53 @@ HTTPD='
 NGINXS='
 10.0.0.1
 10.0.0.2
-10.0.0.10
-10.0.0.11
-10.0.0.12
-10.0.0.13
+10.0.0.10:8081
+10.0.0.10:8082
+10.0.0.10:8083
+10.0.0.11:8081
+10.0.0.11:8082
+10.0.0.11:8083
+10.0.0.12:8081
+10.0.0.12:8082
+10.0.0.12:8083
+10.0.0.13:8081
+10.0.0.13:8082
+10.0.0.13:8083
+10.0.0.14:8081
+10.0.0.14:8082
+10.0.0.14:8083
+10.0.0.14:8084
+10.0.0.14:8085
+10.0.0.14:8086
+10.0.0.14:8087
+10.0.0.14:8088
+10.0.0.14:8089
+10.0.0.14:8090
 '
 
 PHPS='
-10.0.0.10
-10.0.0.11
-10.0.0.12
-10.0.0.13
+10.0.0.10:8081
+10.0.0.10:8082
+10.0.0.10:8083
+10.0.0.11:8081
+10.0.0.11:8082
+10.0.0.11:8083
+10.0.0.12:8081
+10.0.0.12:8082
+10.0.0.12:8083
+10.0.0.13:8081
+10.0.0.13:8082
+10.0.0.13:8083
+10.0.0.14:8081
+10.0.0.14:8082
+10.0.0.14:8083
+10.0.0.14:8084
+10.0.0.14:8085
+10.0.0.14:8086
+10.0.0.14:8087
+10.0.0.14:8088
+10.0.0.14:8089
+10.0.0.14:8090
 '
 
 MEMCACHEDS='
@@ -57,27 +93,23 @@ MEMCACHEDS='
 10.0.0.20:11212
 '
 
+REDIS='
+172.18.1.1:7001
+172.18.1.2:7001
+172.18.1.200:7001
+
+172.18.1.1:7002
+172.18.1.2:7002
+172.18.1.200:7002
+'
+
 MONGODBS='
-10.0.0.30:40000
-10.0.0.31:40000
-10.0.0.32:40000
-
-10.0.0.30:27017
-10.0.0.31:27017
-10.0.0.32:27017
-
 10.0.0.40:40000
 10.0.0.41:40000
-10.0.0.42:40000
 
-10.0.0.50:40000
-10.0.0.51:40000
-10.0.0.52:40000
+10.0.0.24:40101
+10.0.0.24:40102
 
-10.0.0.41:40001
-10.0.0.41:40002
-10.0.0.51:40001
-10.0.0.51:40002
 
 10.0.0.30:60000
 10.0.0.31:60000
@@ -95,10 +127,10 @@ MONGODBS='
 10.0.0.51:60000
 10.0.0.52:60000
 
-10.0.0.41:60001
-10.0.0.41:60002
-10.0.0.51:60001
-10.0.0.51:60002
+10.0.0.24:60101
+10.0.0.24:60102
+10.0.0.24:60201
+10.0.0.24:60202
 
 10.0.0.200:27017
 '
@@ -148,10 +180,10 @@ load () {
 nginx () {
 	#check nginx
 	displayheader 'Checking Nginx'
-	for ip in ${NGINXS} ;do
-		echo -en "$ip\t"
-		#curl -m 3 http://${ip}/NginxStatus 2>/dev/null |grep -e 'Activ' -e 'Writing'|tr -d ' '|tr '\n' '\t '
-		curl -m 3 http://${ip}/NginxStatus 2>/dev/null |grep -e 'Activ' -e 'Writing'|tr '\n' '\t '
+	for ip_port in ${NGINXS} ;do
+		echo -en "${ip_port}\t"
+		#curl -m 3 http://${ip_port}/NginxStatus 2>/dev/null |grep -e 'Activ' -e 'Writing'|tr -d ' '|tr '\n' '\t '
+		curl -m 3 http://${ip_port}/NginxStatus 2>/dev/null |grep -e 'Activ' -e 'Writing'|tr '\n' '\t '
 		echo
 	done
 }
@@ -169,9 +201,9 @@ httpd () {
 php () {
 	#check php-fpm
 	displayheader 'Checking PHP-FPM'
-	for ip in ${PHPS} ;do
-		echo -en "$ip\t"
-		curl -m 3 http://${ip}/status 2>/dev/null |grep -e 'active processes' -e 'idle processes' -e 'slow requests'|tr -d ' '|tr '\n' '\t'
+	for ip_port in ${PHPS} ;do
+		echo -en "${ip_port}\t"
+		curl -m 3 http://${ip_port}/status 2>/dev/null |grep -e 'active processes' -e 'idle processes' -e 'slow requests'|tr -d ' '|tr '\n' '\t'
 		echo
 	done
 }
@@ -203,6 +235,22 @@ memcached () {
 		| sed -e "s/^.*Time/Time/" -e "s/checked[:|;]/:/g"
 	done
 }
+
+redis() {
+	#check redis
+	REDIS_CLI='/home/redis-cluster/bin/redis-cli'
+	displayheader 'Checking Redis'
+	for ip_port in ${REDIS} ;do
+		echo ${ip_port}
+		echo info | ${REDIS_CLI} -c -h ${ip_port%%:*} -p ${ip_port##*:} | grep \
+		-e used_memory_human \
+		-e 'db0:keys' \
+		-e master_host \
+		-e master_port \
+		-e slave0
+		echo
+	done
+}
 	
 gearmand () {
 	#check gearmand
@@ -223,8 +271,8 @@ api_urls () {
 mongodb () {	
 	#check replica-set status
 	displayheader 'Checking Replica-set status'
-	#for port in 40001 40002 60001 60002;do
-	for connstr in 10.0.0.40:40000 10.0.0.50:40000 10.0.0.42:60000 10.0.0.52:60000;do
+	#for port in 40001 60001 60002;do
+	for connstr in 10.0.0.41:40000 10.0.0.42:60000 10.0.0.52:60000;do
 		#echo "rs.status()"|mongo 10.0.0.200:${port}|grep -e '"set"' -e '"name"' -e '"stateStr"'|awk -F':' '{print $2}'|tr -d '\n|"'| \
 		#sed "s/^ *//;s/,$/\n/"
 		if echo $connstr|grep -q '60000';then
@@ -287,6 +335,7 @@ if [ -z "$1" ] ;then
 	php
 	httpd
 	memcached
+	redis
 	gearmand
 	mongodb
 elif [ "$1" = 'web' -o "$1" = "nginx_php" ];then

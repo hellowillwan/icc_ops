@@ -48,3 +48,31 @@ ${MONGOD5w} \
 --logappend \
 --nssize 2000 \
 --fork
+
+
+# 2015-07-21 更新
+# 已创建
+#for port in 40101 40102 60101 60102 60201 60202 ;do
+#	mkdir -p /home/${port}/{data,log}
+#	ln -s /usr/local/mongodb-linux-x86_64-rhel62-3.0.4/bin /home/${port}/
+#done
+
+
+# 4W shard1
+/home/40101/bin/mongod --shardsvr --replSet shard1 --port 40101 --dbpath /home/40101/data --replIndexPrefetch none --logpath /home/40101/log/mongod.log --logappend --nssize 2000 --fork
+/home/40102/bin/mongod --shardsvr --replSet shard1 --port 40102 --dbpath /home/40102/data --replIndexPrefetch none --logpath /home/40102/log/mongod.log --logappend --nssize 2000 --fork
+
+
+# 6W shard1
+/home/60101/bin/mongod --port 60101 --shardsvr --replSet 6w_shard1 --oplogSize 153600 --setParameter failIndexKeyTooLong=false --storageEngine wiredTiger --wiredTigerCacheSizeGB 1 --noIndexBuildRetry --replIndexPrefetch none  --dbpath /home/60101/data --logpath /home/60101/log/mongod.log --logappend --nssize 2000 --fork
+
+/home/60102/bin/mongod --port 60102 --shardsvr --replSet 6w_shard1 --oplogSize 51200  --setParameter failIndexKeyTooLong=false --storageEngine wiredTiger --wiredTigerCacheSizeGB 1 --noIndexBuildRetry --replIndexPrefetch none --dbpath /home/60102/data --logpath /home/60102/log/mongod.log --logappend --nssize 2000 --fork
+
+
+# 6W shard2
+/home/60201/bin/mongod --port 60201 --shardsvr --replSet 6w_shard2 --oplogSize 153600 --setParameter failIndexKeyTooLong=false --storageEngine wiredTiger --wiredTigerCacheSizeGB 1 --noIndexBuildRetry --replIndexPrefetch none --dbpath /home/60201/data --logpath /home/60201/log/mongod.log --logappend --nssize 2000 --fork
+
+/home/60202/bin/mongod --port 60202 --shardsvr --replSet 6w_shard2 --oplogSize 51200  --setParameter failIndexKeyTooLong=false --storageEngine wiredTiger --wiredTigerCacheSizeGB 1 --noIndexBuildRetry --replIndexPrefetch none --dbpath /home/60202/data --logpath /home/60202/log/mongod.log --logappend --nssize 2000 --fork
+
+# 参考：http://docs.mongodb.org/manual/reference/program/mongod/
+

@@ -46,7 +46,6 @@ proc_maillog() {
 }
 
 supervisor_config() {
-	#SUPERVISORCFG='/tmp/sp_cfg_text.txt'
 	if [ -z "$1" ] ;then
 		echo "Action parameter missing."
 		return 0
@@ -72,6 +71,94 @@ supervisor_config() {
 		fi
 	fi
 }
+
+# 获取某个项目的命令行
+get_cmdline() {
+	if [ -z "$1" ] ;then
+		echo "Action parameter missing."
+		return 0
+	else
+		program_name="$1"
+		grep -A 5 -e "program:${program_name}" $SUPERVISORCFG|grep '^command'|head -n 1
+	fi
+}
+
+# 设定某个项目的命令行
+set_cmdline() {
+	if [ -z "$2" ] ;then
+		echo "Action parameter missing."
+		return 0
+	else
+		program_name="$1"
+		new_cmdline="$2"
+		line_number=$(grep -n -A 5 -e "program:${program_name}" $SUPERVISORCFG|grep -P '^[0-9]+-command'|head -n 1|awk -F'-' '{print $1}')
+		# 编辑配置文件
+		#sed -n "${line_number}p" $SUPERVISORCFG
+		sed -i "${line_number}c${new_cmdline}" $SUPERVISORCFG	# abc=wl;seq 3|sed "2c\\$abc"
+		# 更新配置,使用新的参数启动进程
+		${SUPERVISORCTL} -c ${SUPERVISORCFG} update ${program_name} 2>&1
+	fi
+}
+
+# 获取mongo-connector项目的命令行参数---集合列表,返回格式:空格间隔的库名.集合名
+list_collections() {
+	if [ -z "$1" ] ;then
+		echo "Action parameter missing."
+		return 1
+	else
+		if [ "$1" = 'download' ];then
+			program_name=mongo-connector-icc2office
+		elif [ "$1" = 'upload' ];then
+			program_name=mongo-connector-bda_from_office
+		else
+			echo "no program_name found for ${1},exit"
+			return 2
+		fi
+	fi
+	get_cmdline ${program_name} |tr ' |,' '\n'|grep -i -P '^(ICCv1\.|bda\.)'|tr '\n' ' '
+}
+
+# 检查集合名称
+#format_collection_name () {
+#		# 检查集合名称
+#		if echo -n "$1" |grep -q -e '^idatabase_collection_';then
+#			echo "$1"
+#		else
+#			echo "idatabase_collection_${1}"
+#		fi
+#}
+
+# 添加mongo-connector项目的命令行参数---集合
+add_collections() {
+	if [ -z "$2" ] ;then
+		echo "Action parameter missing."
+		return 1
+	else
+		if [ "$1" = 'download' ];then
+			program_name=mongo-connector-icc2office
+			anchor_str='ICCv1.idatabase_logs'
+		elif [ "$1" = 'upload' ];then
+			program_name=mongo-connector-bda_from_office
+			anchor_str='bda.idatabase_logs'
+		else
+			echo "no program_name found for ${1},exit"
+			return 2
+		fi
+	fi
+
+	# 处理输入的集合列表,默认格式:逗号间隔的库名.集合名
+	new_collections="$2"
+	# 处理输入的集合列表,默认格式:空格间隔的库名.集合名
+	#new_collections=''
+	#for coll in $2;do
+	#	new_collections="${new_collections}${coll},"
+	#done
+
+	#old_cmdline=$(get_cmdline ${program_name})
+	new_cmdline=$(get_cmdline ${program_name} | sed "s/\(${anchor_str}\)/\1,${new_collections}/")
+	set_cmdline ${program_name} "$new_cmdline"
+}
+
 
 #processors status
 supervisor_status() {

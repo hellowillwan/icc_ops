@@ -170,7 +170,7 @@ parse_fields() {
 	#生成json文件
 	echo "${json_str}" >> ${DATA_FILE}
 	# 导入mongodb
-	# $ /home/37017/bin/mongoimport -h 192.168.5.41 --port 37017 -d test -c schwarzkopf --drop weixin.schwarzkopfclub.com.cn_2015-05-05_18-05-44.json
+	# $ /home/60000/bin/mongoimport -h 192.168.5.41 --port 60000 -d test -c schwarzkopf --drop weixin.schwarzkopfclub.com.cn_2015-05-05_18-05-44.json
 
 	#直接写入mongodb
 	#echo "db.${collection_name}.save(${json_str})" | ${MONGO_CLIENT} ${MONGO_SERVER_IP}:${MONGO_PORT}/${DB_NAME} 
@@ -232,10 +232,10 @@ DT1="date '+%Y-%m-%d_%H-%M-%S'"
 DT2="date '+%Y-%m-%d %H:%M:%S'"
 
 #MONGO_CLIENT='/home/mongodb/bin/mongo'
-#MONGO_CLIENT='/home/37017/bin/mongo'
-MONGOIMPORT='/home/37017/bin/mongoimport'
-MONGO_SERVER_IP='192.168.5.41'
-MONGO_PORT='37017'
+#MONGO_CLIENT='/home/60000/bin/mongo'
+MONGOIMPORT='/home/60000/bin/mongoimport'
+MONGO_SERVER_IP='192.168.5.40'
+MONGO_PORT='57017'
 DB_NAME='test'
 
 # 域名和日志文件路径,还需要记录处理到哪里的时间节点

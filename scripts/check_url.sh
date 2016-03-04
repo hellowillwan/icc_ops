@@ -2,7 +2,7 @@
 
 uma(){
 	TMPFILE="/tmp/$$.txt"
-	/usr/bin/curl -m 5 -s http://scrm.umaman.com/admin/index/phpinfo > $TMPFILE
+	/usr/bin/curl -m 5 -sx 10.0.0.1:80 http://scrm.umaman.com/admin/index/phpinfo > $TMPFILE
 	#M=$(/usr/bin/wc -l $TMPFILE | awk '{print $1}')
 	M=$(/usr/bin/nl $TMPFILE |tail -n 1|awk '{print $1}')
 	H=$(/bin/grep -n '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "DTD/xhtml1-transitional.dtd">' $TMPFILE |/usr/bin/tail -n 1|awk -F':' '{print $1}')
@@ -16,4 +16,13 @@ uma(){
 	fi
 }
 
-$1
+iwebsite2() {
+	# 监测 http://iwebsite2.umaman.com/
+	if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/ | grep -i -e '^Welcome to visit our website!$' -q ;then
+		echo 1
+	else
+		echo 0
+	fi
+}
+
+grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{" $0 && $1

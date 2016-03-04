@@ -49,8 +49,8 @@ for collection in ${COLLECTION_LIST};do
 			create_hash_index_result=$(echo "${create_hash_index_str}" | ${MONGO_CLIENT} ${MONGOS}/${DB})
 			sharding_result=$(echo "${sharding_str}" | ${MONGO_CLIENT} ${MONGOS}/${DB})
 			# 输出返回信息到标准输出
-			echo "${create_hash_index_result}"
-			echo "${sharding_result}"
+			echo "${create_hash_index_result}"|grep -v -e 'MongoDB shell version:' -e 'connecting to:' -e '^bye$'
+			echo "${sharding_result}"|grep -v -e 'MongoDB shell version:' -e 'connecting to:' -e '^bye$'
 
 			# 从 返回信息 获得执行结果:是否成功
 			#echo "create_hash_index_result:"
