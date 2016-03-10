@@ -25,4 +25,13 @@ iwebsite2() {
 	fi
 }
 
+rosefinch() {
+	# 监测 http://www.rosefinch.cn/
+	if /usr/bin/curl -m 5 -sx 115.29.178.105:80 http://www.rosefinch.cn/ | grep -e '朱雀投资' -q ;then
+		echo 1
+	else
+		echo 0
+	fi
+}
+
 grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{" $0 && $1

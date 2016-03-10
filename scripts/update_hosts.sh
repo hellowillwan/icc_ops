@@ -3,19 +3,22 @@
 #env
 export PATH="/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin"
 
-readonly PROGNAME=$(basename $0)
-readonly FILE='/etc/hosts'
-#readonly FILE='./hosts'
+readonly PROGNAME=$(basename $0|sed 's/\.sh$//;s/_/ /g')
+#readonly FILE='/etc/hosts'
+readonly FILE='/tmp/xdebug_log_dir/.hosts'
+readonly local_proxy_ip='10.0.0.1'
+readonly app_nginx_conf='/home/app_nginx_conf/'
 
 
 #第三方接口的域名
-hostnames='
+readonly hostnames='
 oauth.dianping.com
 api.dianping.com
 open.weixin.qq.com
 api.weixin.qq.com
 c2.topchef.net.cn
 jiale.topchef.net.cn
+sms-api.luosimao.com
 '
 
 for hostname in $hostnames ;do
@@ -46,27 +49,33 @@ done
 
 
 #配置在集群上的域名
-
-readonly my_ipaddr='10.0.0.1'
-for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' /usr/local/tengine/conf/ \
+#
+for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' ${app_nginx_conf} \
 			|sed 's#server_name##;s#;.*$##' \
 			|tr ' |\t' '\n' \
 			|sort|uniq \
 			|grep -P -e '\.(com|cn|org|net)'`
 do
-	if grep -q -P -e "^${my_ipaddr}\t${my_hostname}\$" $FILE ;then
+	if grep -q -P -e "^${local_proxy_ip}\t${my_hostname}\$" $FILE ;then
 		#如果记录与hosts文件里的相同,也就是有这条记录,什么也不做
 		:
 	else
 		if grep -q -P -e "^[^#]*[ |\t]${my_hostname}\$" $FILE ;then
 			#如果hosts文件里有这个域名的记录,但IP不同,在这里更新
-			sed -i -e "/${my_hostname}/c\\${my_ipaddr}\t${my_hostname}" $FILE
-			logger "$PROGNAME update ${my_ipaddr} ${my_hostname} return code:$?"
+			sed -i -e "/${my_hostname}/c\\${local_proxy_ip}\t${my_hostname}" $FILE
+			logger "$PROGNAME update ${local_proxy_ip} ${my_hostname} return code:$?"
 		else
 			#如果hosts文件里没有这个域名的记录,这里添加
-			echo -e "${my_ipaddr}\t${my_hostname}" >> $FILE
-			logger "$PROGNAME add ${my_ipaddr} ${my_hostname} return code:$?"
+			echo -e "${local_proxy_ip}\t${my_hostname}" >> $FILE
+			logger "$PROGNAME add ${local_proxy_ip} ${my_hostname} return code:$?"
 		fi
 	fi
 
 done
+
+
+#localhost
+#
+/bin/grep -q -e '^127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4$' ${FILE} || \
+/bin/sed -i '1i127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4' ${FILE}
+

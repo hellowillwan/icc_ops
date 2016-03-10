@@ -36,7 +36,7 @@ p_ret() {
 # 发送邮件
 sendemail () {
 	SNDEMAIL_LOG='/tmp/sendemail.log'
-	if [ -z "$4" ] ;then
+	if [ -z "$3" ] ;then
 		echo -e "\n$(date) : parameters missing." >> $SNDEMAIL_LOG 
 		return 1
 	fi
@@ -44,15 +44,19 @@ sendemail () {
 	to_list=$1
 	subject=$2
 	content=$3
-	file=$4
+	if [ -z "$4" ];then
+		attachment=''
+	else
+		attachment=" -F ${4} "
+	fi
 	#echo -e "\n$(date)\n${to_list}\n${subject}\n${content}" >> $SNDEMAIL_LOG
 	echo -e "\n$(date)\n${to_list}\n${subject}" >> $SNDEMAIL_LOG
 	#/usr/local/sbin/sendemail.py -s smtp.catholic.net.cn -f serveroperations@catholic.net.cn -u serveroperations@catholic.net.cn -p zd0nWmAkDH_tUwFl1wr \
 	/usr/local/sbin/sendemail.py -s smtp.icatholic.net.cn -f system.monitor@icatholic.net.cn -u system.monitor@icatholic.net.cn -p abc123 \
 		-t "$to_list" \
 		-S "$subject" \
-		-m "$content" \
-		-F "$file" |tee -a $SNDEMAIL_LOG 2>&1
+		-m "$content" ${attachment} | tee -a $SNDEMAIL_LOG 2>&1
+		#-F "$file" |tee -a $SNDEMAIL_LOG 2>&1
 	ret=$?
 	if [ $ret -eq 0 ] ;then
 		echo "$(date) : mail sent." | tee -a $SNDEMAIL_LOG
@@ -325,6 +329,9 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	flush_alicdn)
 		source /usr/local/sbin/sc_cdn_functions.sh
 		$cmd $p3 $p4 | logger
+	        ;;
+	sendemail)
+		sendemail "$p3" "$p4" "$p5" "$p6"
 	        ;;
 	*)
 		echo "unknow command,return code:3"
