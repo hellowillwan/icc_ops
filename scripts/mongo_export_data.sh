@@ -3,8 +3,8 @@
 #导出mongodb指定库指定集合的数据到csv文件,转码并压缩
 #
 
-MONGO='/home/mongodb/bin/mongo'
-MONGOEXPORT='/home/mongodb/bin/mongoexport'
+MONGO='/home/60000/bin/mongo'
+MONGOEXPORT='/home/60000/bin/mongoexport'
 MONGOS_IP='10.0.0.30'
 TMP_DIR="/tmp/"
 
@@ -55,7 +55,11 @@ export_data () {
 		TMP_FILE="${TMP_DIR}${DB}.${COLLECTION}.$(date '+%Y-%m-%d-%H_%M_%S')"
 		DATA_FILE="${TMP_FILE}_gbk.csv.gz"
 	fi
-	
+
+	# 根据不同版本设定type参数
+	type_parameter=' --csv '
+	test "${DB}" = 'ICCv1' && type_parameter=' --type=csv '
+
 	#字段列表
 	FIELDS=$(get_collection_fields ${DB} ${COLLECTION})
 	
@@ -64,7 +68,8 @@ export_data () {
 		#-q '{ "hid": { $in: ["4446fcecdf854721b8388f323c6fe4d2","29769ba0b41f4576bef5be0807e8c4c2" ] } }' \
 	${MONGOEXPORT} -h ${MONGOS_IP} --port ${MONGOS_PORT} \
 		-d ${DB} -c ${COLLECTION} \
-		--csv -f ${FIELDS} \
+		${type_parameter} \
+		-f ${FIELDS} \
 		-o ${TMP_FILE}
 
 	if [ -f ${TMP_FILE} ];then
@@ -88,6 +93,8 @@ else
 	COLLECTION="$2"
 
 	if [ "$DB" = "umav3" ];then
+		MONGO='/home/mongodb/bin/mongo'
+		MONGOEXPORT='/home/mongodb/bin/mongoexport'
 		MONGOS_IP='10.0.0.41'	#uma数据库有变更:sharded cluster --> replset,这里是主库ip:port
 		MONGOS_PORT='40000'
 	elif [ "$DB" = "ICCv1" ] ;then

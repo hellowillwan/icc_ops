@@ -173,7 +173,7 @@ readonly query_str3="
                         {
                             \"range\": {
                                 \"@timestamp\": {
-                                    \"gte\": $(date -d '-12 hour' +%s000),
+                                    \"gte\": $(date -d '-1 hour' +%s000),
                                     \"lte\": $(date +%s000) 
                                 }
                             }

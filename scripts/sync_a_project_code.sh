@@ -64,6 +64,22 @@ sync_individually() {
 	#echo -e "${hostname}\t${subdir}"
 	#return
 
+	# 对开启微商城的项目做软链接
+	# /home/webs/weshop/application/modules/shop -> /home/webs/haoyadatestdemo/application/modules/shop
+	#
+	if grep -q -e "^${subdir}$" /var/lib/weshop_enabled_hosts ;then
+		# 删除[软链接|文件|文件夹|无]
+		test -n "${subdir}" && rm /home/webs/${subdir}/application/modules/{shop,shopadmin} -rf
+		# 创建软链接
+		if echo "${subdir}" |grep -q -e 'demo$' ;then
+			ln -s /home/webs/weshopdemo/application/modules/shop /home/webs/${subdir}/application/modules/shop
+			ln -s /home/webs/weshopdemo/application/modules/shopadmin /home/webs/${subdir}/application/modules/shopadmin
+		else
+			ln -s /home/webs/weshop/application/modules/shop /home/webs/${subdir}/application/modules/shop
+			ln -s /home/webs/weshop/application/modules/shopadmin /home/webs/${subdir}/application/modules/shopadmin
+		fi
+	fi
+
 	#按webroot目录,分发项目代码
 	echo -e "分发 /home/webs/${subdir}/ 目录 :\n"
 	for ip in ${APP_IP_ARY[@]} ;do
