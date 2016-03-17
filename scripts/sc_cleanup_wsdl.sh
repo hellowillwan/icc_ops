@@ -7,7 +7,7 @@
 #
 # cleanup /tmp/wsdl* files on host200 and all apps.
 DT2="date '+%Y-%m-%d %H:%M:%S'"
-APP_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13')
+APP_IP_ARY=('10.0.0.10' '10.0.0.11' '10.0.0.12' '10.0.0.13' '10.0.0.14')
 
 
 p_ret() {
@@ -26,7 +26,7 @@ cleanup_wsdl() {
 	rm /tmp/wsdl* -f &>/dev/null;ls /tmp/wsdl* &>/dev/null
 	p_ret $? "$(eval $DT2)  10.0.0.200 清除WSDL缓存失败,请重试." "$(eval $DT2)  10.0.0.200 清除WSDL缓存成功."
 
-	/usr/bin/func 'app*' call command run 'rm /tmp/wsdl* -f;ls /tmp/wsdl*' | sort | while read line;do
+	/usr/bin/func 'app*' call command run 'rm /tmp/wsdl* /tmp/icc_appserver_c*/wsdl* -f;ls /tmp/wsdl* /tmp/icc_appserver_c*/wsdl* &>/dev/null' | sort | while read line;do
 		echo "$line" | tr -d "',()[]" | while read hostname retcode omit;do
 			hostname="$(($(echo $hostname|sed 's/app0//')-1))"
 			hostip="${APP_IP_ARY[$hostname]}"

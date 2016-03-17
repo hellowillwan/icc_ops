@@ -66,6 +66,8 @@ export_data () {
 	#导出
 		#-q '{$or:[{"hid":"4446fcecdf854721b8388f323c6fe4d2"},{"hid":"29769ba0b41f4576bef5be0807e8c4c2"}]}' \
 		#-q '{ "hid": { $in: ["4446fcecdf854721b8388f323c6fe4d2","29769ba0b41f4576bef5be0807e8c4c2" ] } }' \
+		#-q '{"subscribe":true}' \
+		#-f ${FIELDS} \
 	${MONGOEXPORT} -h ${MONGOS_IP} --port ${MONGOS_PORT} \
 		-d ${DB} -c ${COLLECTION} \
 		${type_parameter} \

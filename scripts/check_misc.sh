@@ -17,7 +17,7 @@ nginx() {
 	return 0 
 }
 
-httpd(){
+httpd() {
 	if [ -z "$1" ] ;then
 		echo "parameter error."
 		return 0
@@ -105,7 +105,7 @@ mongodb() {
 	fi
 }
 
-sendemail () {
+sendemail() {
 	SNDEMAIL_LOG='/tmp/sendemail.log'
 	if [ -z "$4" ] ;then
 		echo -e "\n$(date) : parameters missing." >> $SNDEMAIL_LOG 
@@ -127,7 +127,7 @@ sendemail () {
 	[ $? -eq 0 ] && echo "$(date) : mail sent." >> $SNDEMAIL_LOG
 }
 
-log_analyst () {
+log_analyst() {
 	if [ -z "$4" ] ;then
 		echo "parameter missing: hostname request_time_threshold count_threshold_stdc count_threshold_dnmc"
 		return 0
@@ -200,7 +200,7 @@ log_analyst () {
 	rm $TMP_FILE_DNMC $TMP_FILE_STDC $TMP_FILE_GZ -f
 }
 
-mongo_index () {
+mongo_index() {
 	if [ -z "$4" ] ;then
 		echo "Parameter missing: ip port db record_count_threshold"
 		return 1
@@ -257,7 +257,7 @@ mongo_index () {
 	rm ${tmp_file} ${TMP_FILE_GZ} -f
 }
 
-out_conn () {
+out_conn() {
 	source /usr/local/sbin/ProcNetTCP_Parser.sh
 	count=$(core_netstat 2>/dev/null | awk '$3 !~ /10.0.0/ && $3 !~ /172.18.1/ && $3 !~ /127.0.0.1/ && $3 !~ /0.0.0.0/' 2>/dev/null|wc -l)
 	echo ${count:-0}
@@ -265,6 +265,11 @@ out_conn () {
 
 nic_link() {
 	dmesg |grep 'Link is Down'|wc -l
+}
+
+configdb_isdiffer() {
+	mongos_logfile='/home/60000/log/mongos.log'
+	grep -e 'SHARDING config servers.*differ' ${mongos_logfile} |wc -l
 }
 
 
@@ -279,7 +284,7 @@ else
 fi
 
 case "$cmd" in
-  nginx|httpd|out_conn|nic_link)
+  nginx|httpd|out_conn|nic_link|configdb_isdiffer)
         $cmd $2
         ;;
   memcached|gearmand|mongodb|php)
@@ -292,6 +297,7 @@ case "$cmd" in
         $cmd $2 $3 $4 $5 $6
         ;;
   *)
-        echo "Usage: $0 {nginx|httpd|php|memcached|gearmand|mongodb|mongo_index|log_analyst|out_conn} ip_addr port"
+	function_list="$(grep -P '^[ |\t]*[0-9A-Za-z-_]+ *\(\) *{' $0 | sed 's/(.*$//'|tr '\n' '|')"
+        echo "Usage: $0 [${function_list%|}] ip_addr port"
         exit 1
 esac

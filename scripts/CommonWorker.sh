@@ -145,7 +145,8 @@ add_project ()
 	fi
 
 	project_code="$1"
-	project_domain="$project_code.umaman.com"
+	#项目主域名
+	project_domain="${project_code}.umaman.com"
 	if get_project_status $project_code &>/dev/null ;then
 		#项目已经配置,返回
 		echo "Deployer : $project_code was allready configured,return code:1"
@@ -159,9 +160,12 @@ add_project ()
 			# 配置文件路径
 			subpath='vhost/'
 		fi
-		project_domain_static="$project_code.umaman.net"	#专门服务静态资源的域名
+		#专门服务静态资源的域名
+		project_domain_static="${project_code}.umaman.net"
+		#另外三个备用的域名
+		project_domain_backup="${project_code}.icatholiccloud.com ${project_code}.icatholiccloud.net ${project_code}.icatholiccloud.cn"
 		# 配置模板中需要替换的变量
-		PROJECT_DOMAIN="$project_domain $project_domain_static"
+		PROJECT_DOMAIN="$project_domain $project_domain_static $project_domain_backup"
 		CACHE_ZONE_NAME="$project_domain"
 
 		#生成项目app配置

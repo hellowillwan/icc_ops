@@ -69,15 +69,16 @@ sync_individually() {
 	#
 	if grep -q -e "^${subdir}$" /var/lib/weshop_enabled_hosts ;then
 		# 删除[软链接|文件|文件夹|无]
-		test -n "${subdir}" && rm /home/webs/${subdir}/application/modules/{shop,shopadmin} -rf
+		test -n "${subdir}" && rm /home/webs/${subdir}/application/modules/{shop,shopadmin,backend,backendadmin,bargain3,bargainactivity,tools} -rf
 		# 创建软链接
 		if echo "${subdir}" |grep -q -e 'demo$' ;then
-			ln -s /home/webs/weshopdemo/application/modules/shop /home/webs/${subdir}/application/modules/shop
-			ln -s /home/webs/weshopdemo/application/modules/shopadmin /home/webs/${subdir}/application/modules/shopadmin
+			src_dir='/home/webs/weshopdemo/application/modules/'
 		else
-			ln -s /home/webs/weshop/application/modules/shop /home/webs/${subdir}/application/modules/shop
-			ln -s /home/webs/weshop/application/modules/shopadmin /home/webs/${subdir}/application/modules/shopadmin
+			src_dir='/home/webs/weshop/application/modules/'
 		fi
+		for mod_dir in shop shopadmin backend backendadmin bargain3 bargainactivity tools ;do
+			ln -s ${src_dir}${mod_dir} /home/webs/${subdir}/application/modules/${mod_dir}
+		done
 	fi
 
 	#按webroot目录,分发项目代码
