@@ -107,7 +107,6 @@ MONGODBS='
 10.0.0.40:40000
 10.0.0.41:40000
 
-10.0.0.24:40101
 10.0.0.24:40102
 
 
@@ -136,10 +135,6 @@ MONGODBS='
 '
 
 MONGOSES='
-10.0.0.30:27017
-10.0.0.31:27017
-10.0.0.32:27017
-
 10.0.0.30:57017
 10.0.0.31:57017
 10.0.0.32:57017
@@ -268,7 +263,8 @@ api_urls () {
 		echo
 	done
 }
-mongodb () {	
+
+mongodb () {
 	#check replica-set status
 	displayheader 'Checking Replica-set status'
 	#for port in 40001 60001 60002;do
@@ -328,6 +324,19 @@ mongos() {
 	done
 }
 
+mongo_configdb_differ() {
+	displayheader 'Checking ConfigDB differ'
+	func 'mongodbc*' call command run 'grep -i differ /home/60000/log/mongos.log|wc -l'
+}
+
+mongo_slow_query_of_master(){
+	# counting slow query of master
+	displayheader 'Slow Query of Master'
+	grep -hoe 'idata.*ms$' /tmp/server_log_dir/mongodbp?d3/mongo/mongod.log|awk -F' |"' '{print $1}'|sort |uniq -c|sort -k1,1nr|head 
+	# 查询集合信息
+	# MONGO="/home/60000/bin/mongo" MONGOS_IP='10.0.0.30' MONGOS_PORT='57017' DB='ICCv1' COLLECTION_NAME='idatabase_collection_553dac8fb1752fa45f8b5d38';source sc_mongodb_functions.sh ; get_collection_info
+}
+
 if [ -z "$1" ] ;then
 	funcping
 	load
@@ -338,6 +347,9 @@ if [ -z "$1" ] ;then
 	redis
 	gearmand
 	mongodb
+	mongos
+	mongo_configdb_differ
+	mongo_slow_query_of_master
 elif [ "$1" = 'web' -o "$1" = "nginx_php" ];then
 	nginx
 	php
@@ -349,6 +361,9 @@ elif [ "$1" = 'load' -o "$1" = "system_load" ];then
 	load
 elif [ "$1" = 'db' ];then
 	mongodb
+	mongos
+	mongo_configdb_differ
+	mongo_slow_query_of_master
 elif [ "$1" = 'mc' ];then
 	memcached
 elif [ "$1" = 'gm' ];then
