@@ -30,15 +30,22 @@ sed -i -e 's/\(include.*alias.*conf;\)/#\1/' ${CFG_WORKING_DIR}/app_nginx_conf/n
 # 设置环境参数
 sed -i 's/production/testing/' ${CFG_WORKING_DIR}/app_nginx_conf/fastcgi_params_production
 # 传递给 php 的环境变量
-sed -i '/fastcgi_param  ICC_MEMCACHED_SERVER/c\fastcgi_param  ICC_MEMCACHED_SERVER  192.168.5.41:11211;' \
+#sed -i '/fastcgi_param  ICC_MEMCACHED_SERVER/c\fastcgi_param  ICC_MEMCACHED_SERVER  192.168.5.41:11211;' \
+sed -i "s/\(^[ |\t]*fastcgi_param[ |\t]\+ICC_MEMCACHED_SERVER[ |\t]\+\).*/\1'192.168.5.41:11211';/" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
-sed -i "/fastcgi_param  MEMCACHED_SERVER/c\fastcgi_param  MEMCACHED_SERVER  'tcp://192.168.5.41:11211/?weight=20';" \
+#sed -i "/fastcgi_param  MEMCACHED_SERVER/c\fastcgi_param  MEMCACHED_SERVER  'tcp://192.168.5.41:11211/?weight=20';" \
+sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+MEMCACHED_SERVER[ |\t]\+\).*#\1'tcp://192.168.5.41:11211/?weight=20';#" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
-sed -i "/fastcgi_param  ICC_REDIS_MASTERS/c\fastcgi_param  ICC_REDIS_MASTERS  192.168.5.41:7001,192.168.5.41:7002,192.168.5.41:7003;" \
+sed -i "s/\(^[ |\t]*fastcgi_param[ |\t]\+GEARMAN_SERVER[ |\t]\+\).*/\1'192.168.5.41:4730';/" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
-sed -i "/fastcgi_param  ICC_REDIS_SLAVES/c\fastcgi_param  ICC_REDIS_SLAVES  192.168.5.41:7004,192.168.5.41:7005,192.168.5.41:7006;" \
+#sed -i "/fastcgi_param  ICC_REDIS_MASTERS/c\fastcgi_param  ICC_REDIS_MASTERS  192.168.5.41:7001,192.168.5.41:7002,192.168.5.41:7003;" \
+sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_REDIS_MASTERS[ |\t]\+\).*#\1'192.168.5.41:7001,192.168.5.41:7002,192.168.5.41:7003';#" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
-sed -i "/fastcgi_param  ICC_MONGOS_ICC/c\fastcgi_param  ICC_MONGOS_ICC  192.168.5.41:60000,192.168.5.41:60000;" \
+#sed -i "/fastcgi_param  ICC_REDIS_SLAVES/c\fastcgi_param  ICC_REDIS_SLAVES  192.168.5.41:7004,192.168.5.41:7005,192.168.5.41:7006;" \
+sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_REDIS_SLAVES[ |\t]\+\).*#\1'192.168.5.41:7004,192.168.5.41:7005,192.168.5.41:7006';#" \
+	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
+#sed -i "/fastcgi_param  ICC_MONGOS_ICC/c\fastcgi_param  ICC_MONGOS_ICC  192.168.5.40:57017;" \
+sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_MONGOS_ICC[ |\t]\+\).*#\1'192.168.5.40:57017';#" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
 # 修改默认vhost
 # 允许从内网访问 /NginxStatus /status 状态页面
@@ -47,7 +54,7 @@ sed -i -e '/allow 10.0.0/a\\t\tallow 192.168.0.0/16;' \
 # 下载 xdebug_log 文件的配置
 sed -i -e "/location \/ /i\\\tlocation \/xdebug_log_dir {\\n\\t\\troot /home/webs/fgblog;\\n\\t\\tautoindex on;\\n\\t}\\n" \
 	${CFG_WORKING_DIR}/app_nginx_conf/vhost/default_server.conf
-# 修改所有vhost 添加 dev 域名
+# 修改所有vhost 添加 dev,test 域名
 for vhostfile in $(find ${CFG_WORKING_DIR}/app_nginx_conf/vhost/ \
 			| grep -e '\.conf$' \
 			| grep -v -P '\.(com|cn|net).conf' \
@@ -55,12 +62,18 @@ for vhostfile in $(find ${CFG_WORKING_DIR}/app_nginx_conf/vhost/ \
 );do
 	project_name=${vhostfile##*/}
 	project_name=${project_name%%.*}
-	# 编辑添加dev域名
-	sed -i "s/\(^[ |\t]*server_name.*\);/\1 ${project_name}.umaman.xyz ${project_name}.dev.umaman.com;/" $vhostfile
+	domainnames_add="${project_name}.umaman.xyz ${project_name}.dev.umaman.xyz ${project_name}.test.umaman.xyz ${project_name}.dev.umaman.com"
+	# 编辑添加 dev,test 域名
+	sed -i "s/\(^[ |\t]*server_name.*\);/\1 ${domainnames_add};/" $vhostfile
 	# 检查
-	if ! grep -q -P "^[ |\t]*server_name.*${project_name}.umaman.xyz ${project_name}.dev.umaman.com;" $vhostfile ;then
+	if ! grep -q -P "^[ |\t]*server_name.*${domainnames_add};" $vhostfile ;then
 		/usr/bin/logger "${SCRIPT_NAME} edit $vhostfile fail."
 	fi
+	# 设置 webroot 变量
+	sed -i "/\(^[ |\t]*\)root/i\\\tset \$webroot '/home/webs/dev';\n\tif (\$host ~* \".test.umaman.xyz\$\") { set \$webroot '/home/webs/test';}" $vhostfile
+	# 编辑 root 路径
+	#sed -i 's/\(\/home\/webs\)/\1\/dev/' $vhostfile
+	sed -i 's|\(^[ |\t]*root[ |\t]*\)\/home\/webs|\1$webroot|' $vhostfile
 	# 编辑增加 autoindex on 指令
 	sed -i '/^[ |\t]*root/a\\tautoindex on;' $vhostfile
 done

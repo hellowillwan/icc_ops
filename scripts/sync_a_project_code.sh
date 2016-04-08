@@ -68,22 +68,34 @@ sync_individually() {
 	# /home/webs/weshop/application/modules/shop -> /home/webs/haoyadatestdemo/application/modules/shop
 	#
 	if grep -q -e "^${subdir}$" /var/lib/weshop_enabled_hosts ;then
-		# 删除[软链接|文件|文件夹|无]
-		test -n "${subdir}" && rm /home/webs/${subdir}/application/modules/{shop,shopadmin,backend,backendadmin,bargain3,bargainactivity,tools,api,card,tag2,urm,weixininvitation,weixinpush} -rf
-		test -n "${subdir}" && rm /home/webs/${subdir}/library/iWebsite/Plugin/Backend.php -f
+		# 无条件删除[软链接|文件|文件夹|无] 并 确保上级目录存在
+		if test -n "${subdir}" ;then
+			rm /home/webs/${subdir}/application/modules/{shop,shopadmin,backend,backendadmin,bargain3,bargainactivity,tools,api,card,tag2,urm,weixininvitation,weixinpush} -rf
+			rm /home/webs/${subdir}/library/iWebsite/Plugin/Backend.php -f
+			rm /home/webs/${subdir}/library/iWebsite/Helper/AssetsList.php -f
+			mkdir -p /home/webs/${subdir}/application/modules &>/dev/null
+			mkdir -p /home/webs/${subdir}/library/iWebsite/Plugin &>/dev/null
+			mkdir -p /home/webs/${subdir}/library/iWebsite/Helper &>/dev/null
+		fi
+
 		# 创建软链接
 		if echo "${subdir}" |grep -q -e 'demo$' ;then
 			src_dir='/home/webs/weshopdemo/application/modules/'
 			src_dir2='/home/webs/weshopdemo/library/iWebsite/Plugin/'
+			src_dir3='/home/webs/weshopdemo/library/iWebsite/Helper/'
 		else
 			src_dir='/home/webs/weshop/application/modules/'
 			src_dir2='/home/webs/weshop/library/iWebsite/Plugin/'
+			src_dir3='/home/webs/weshop/library/iWebsite/Helper/'
 		fi
 		for mod_dir in shop shopadmin backend backendadmin bargain3 bargainactivity tools api card tag2 urm weixininvitation weixinpush;do
 			test -d ${src_dir}${mod_dir} && ln -s ${src_dir}${mod_dir} /home/webs/${subdir}/application/modules/${mod_dir}
 		done
-		for file in Backend.php ;do
-			test -f ${src_dir2}${file} && ln -s ${src_dir2}${file} /home/webs/${subdir}/library/iWebsite/Plugin/
+		for plugin_file in Backend.php ;do
+			test -f ${src_dir2}${plugin_file} && ln -s ${src_dir2}${plugin_file} /home/webs/${subdir}/library/iWebsite/Plugin/${plugin_file}
+		done
+		for helper_file in AssetsList.php ;do
+			test -f ${src_dir3}${helper_file} && ln -s ${src_dir3}${helper_file} /home/webs/${subdir}/library/iWebsite/Helper/${helper_file}
 		done
 	fi
 

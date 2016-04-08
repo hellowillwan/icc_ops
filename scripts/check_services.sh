@@ -203,6 +203,21 @@ php () {
 	done
 }
 
+check_containers() {
+	if [ -z "$1" ];then
+		echo usage: $0 http://weshopdemo.umaman.com/default/index/test
+		return 1
+	else
+		url="$1"
+	fi
+	displayheader '检查所有容器对同一个url的输出是否一致'
+	for ip_port in ${PHPS} ;do
+		echo -en "${ip_port}\t"
+		curl -sx ${ip_port} "$url"
+		echo
+	done
+}
+
 php_terminating () {
 	displayheader 'Checking PHP Terminating'
 	func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*terminating' /var/log/php-fpm/error.log |wc -l"|sort
@@ -333,8 +348,18 @@ mongo_slow_query_of_master(){
 	# counting slow query of master
 	displayheader 'Slow Query of Master'
 	grep -hoe 'idata.*ms$' /tmp/server_log_dir/mongodbp?d3/mongo/mongod.log|awk -F' |"' '{print $1}'|sort |uniq -c|sort -k1,1nr|head 
+}
+
+get_collection_info() {
 	# 查询集合信息
-	# MONGO="/home/60000/bin/mongo" MONGOS_IP='10.0.0.30' MONGOS_PORT='57017' DB='ICCv1' COLLECTION_NAME='idatabase_collection_553dac8fb1752fa45f8b5d38';source sc_mongodb_functions.sh ; get_collection_info
+	read -p "Pls input collection name: " cn
+		local MONGO="/home/60000/bin/mongo"
+		local MONGOS_IP='10.0.0.30'
+		local MONGOS_PORT='57017'
+		local DB='ICCv1'
+		local COLLECTION_NAME="$cn"
+		source sc_mongodb_functions.sh
+		get_collection_info
 }
 
 if [ -z "$1" ] ;then
@@ -359,17 +384,19 @@ elif [ "$1" = 'php' -o "$1" = "php_stat" ];then
 	php_segfault
 elif [ "$1" = 'load' -o "$1" = "system_load" ];then
 	load
-elif [ "$1" = 'db' ];then
+elif [ "$1" = 'db' -o "$1" = 'mongodb' ];then
 	mongodb
 	mongos
 	mongo_configdb_differ
+	mongo_slow_query_of_master
+elif [ "$1" = 'slow' ];then
 	mongo_slow_query_of_master
 elif [ "$1" = 'mc' ];then
 	memcached
 elif [ "$1" = 'gm' ];then
 	gearmand
 else
-	grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{" $0 && $1
+	grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{" $0 && $1 $2 $3
 	grep -q -P -e "^${2}[ |\t]?\(\)[ |\t]?\{" $0 && $2
 	grep -q -P -e "^${3}[ |\t]?\(\)[ |\t]?\{" $0 && $3
 fi

@@ -227,7 +227,7 @@ mongo_query() {
 		COLLECTION_LIKE="$2"		#may be just id
 
 		MONGO="/home/60000/bin/mongo"	#这个变量为什么不能弄成全局的呢?因为不同函数可能在不同机器上执行,不同机器的环境(比如Mongo版本)竟然是不同的.
-		MONGOS_IP='10.0.0.30'
+		MONGOS_IP='10.0.0.31'
 
 		if [ "$DB" = "umav3" ];then
 			MONGO="/home/mongodb/bin/mongo"
@@ -323,7 +323,7 @@ mongo_sync () {
 
 	if [ ${DIRECTION} = 'download' ];then
 		SRC_ENV='产生'
-		SRC_HOST='10.0.0.30'
+		SRC_HOST='10.0.0.31'
 		SRC_PORT=57017
 		if [ "${DB}" = 'umav3' ];then
 			SRC_HOST='10.0.0.41'
@@ -337,7 +337,7 @@ mongo_sync () {
 		SRC_HOST='10.0.0.200'
 		SRC_PORT=37017
 		DST_ENV='生产'
-		DST_HOST='10.0.0.30'
+		DST_HOST='10.0.0.31'
 		DST_PORT=57017
 		if [ "$DB" = 'ICCv1' ];then
 			echo 'upload any collection to ICCv1 was prohibited,nothing done,exit.'
@@ -351,7 +351,7 @@ mongo_sync () {
 	#dump from SRC_HOST:SRC_PORT
 	for coll_name in $COLLECTIONS ;do
 		# 补全集合名称
-		[ "${DB}" = 'ICCv1' ] && coll_name=$(format_collection_name "$coll_name")
+		[ "${DB}" = 'ICCv1' -o "${DB}" = 'bda' ] && coll_name=$(format_collection_name "$coll_name")
 		[ "${DB}" = 'umav3' ] && coll_name=$(format_collection_name_uma "$coll_name")
 
 		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#dumping" >> $STATS_FILE
@@ -373,7 +373,7 @@ mongo_sync () {
 	#restore to DST_HOST:DST_PORT
 	for coll_name in $COLLECTIONS ;do
 		# 补全集合名称
-		[ "${DB}" = 'ICCv1' ] && coll_name=$(format_collection_name "$coll_name")
+		[ "${DB}" = 'ICCv1' -o "${DB}" = 'bda' ] && coll_name=$(format_collection_name "$coll_name")
 		[ "${DB}" = 'umav3' ] && coll_name=$(format_collection_name_uma "$coll_name")
 
 		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DB}#${COLLECTIONS}#restoring" >> $STATS_FILE

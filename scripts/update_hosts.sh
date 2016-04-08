@@ -68,3 +68,10 @@ done
 /bin/grep -q -e '^127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4$' ${hosts_file} || \
 /bin/sed -i '1i127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4' ${hosts_file}
 
+
+# 检查容器内hosts文件是否已更新
+# 
+#func 'app*' call command run \
+#	". ~/.bashrc ;docker_run_a_cmd_on_all_container '[ -r /var/log/xdebug_log_dir/.hosts -a -s /var/log/xdebug_log_dir/.hosts ] && md5sum /etc/hosts'" \
+#	| grep -o `md5sum  /tmp/xdebug_log_dir/.hosts |awk '{print $1}'`|sort |uniq -c
+
