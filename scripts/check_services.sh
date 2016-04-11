@@ -345,9 +345,11 @@ mongo_configdb_differ() {
 }
 
 mongo_slow_query_of_master(){
-	# counting slow query of master
+	# counting slow query and average qtime of master
 	displayheader 'Slow Query of Master'
-	grep -hoe 'idata.*ms$' /tmp/server_log_dir/mongodbp?d3/mongo/mongod.log|awk -F' |"' '{print $1}'|sort |uniq -c|sort -k1,1nr|head 
+	grep -hoe 'idata.*ms$' /tmp/server_log_dir/mongodbp?d3/mongo/mongod.log | grep -v -e 'oplog:' \
+	| awk -F' |"' '{sub(/ms$/,"",$NF);ary1[$1] += 1;ary2[$1] += $NF}END{for(c in ary1) printf "%45-s %8d %8.0f\n",c,ary1[c],ary2[c]/ary1[c]}' \
+	| sort -k2,3nr | head -n 10
 }
 
 get_collection_info() {
