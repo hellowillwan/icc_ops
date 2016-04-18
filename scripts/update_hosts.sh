@@ -11,7 +11,7 @@ readonly app_nginx_conf='/home/app_nginx_conf/'
 
 
 cat ${third_api_domain_list} | while read hostname ;do
-	ipaddr=$(dig @202.96.209.133 $hostname 2>/dev/null | grep -P '\tA\t' 2>/dev/null | head -n 1 |awk '{print $NF}' \
+	ipaddr=$(dig @116.228.111.118 $hostname 2>/dev/null | grep -P '\tA\t' 2>/dev/null | head -n 1 |awk '{print $NF}' \
 		|grep -P -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' 2>/dev/null)
 	#echo -e "${ipaddr}\t${hostname}"
 	if [ -z "$ipaddr" ];then

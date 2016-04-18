@@ -17,7 +17,7 @@ for file_using in /usr/local/sbin/*;do
 done
 
 # purge cache
-diff -r /var/www/html/purge /home/wanlong/PKG/ops/scripts/purge | grep -v -e '^Only in /home/wanlong/PKG/ops/scripts/purge'
+diff  -x 'accounts.php' -r /var/www/html/purge /home/wanlong/PKG/ops/scripts/purge | grep -v -e '^Only in /home/wanlong/PKG/ops/scripts/purge'
 
 #
 # 检查ngx配置文件
@@ -34,7 +34,7 @@ diff -r /home/app_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/app_nginx_conf/ 2>&1
 diff -r /home/app_php_conf/ /home/wanlong/PKG/ops/app_php_conf/ 2>&1|grep -v -e '\.svn$' -e '^Only in /home/wanlong/PKG/ops/app_php_conf'
 
 echo "同步命令"
-echo "rsync -rptvz /usr/local/share/commonworker/ /home/wanlong/PKG/ops/ngx_cfg/cfg_template/"
-echo "rsync -rptvz /home/proxy_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/proxy_nginx_conf/"
-echo "rsync -rptvz /home/app_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/app_nginx_conf/"
-echo "rsync -rptvz /home/app_php_conf/ /home/wanlong/PKG/ops/app_php_conf/"
+echo "rsync -rptcvz /usr/local/share/commonworker/ /home/wanlong/PKG/ops/ngx_cfg/cfg_template/"
+echo "rsync -rptcvz /home/proxy_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/proxy_nginx_conf/"
+echo "rsync -rptcvz /home/app_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/app_nginx_conf/"
+echo "rsync -rptcvz /home/app_php_conf/ /home/wanlong/PKG/ops/app_php_conf/"

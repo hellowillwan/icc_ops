@@ -67,39 +67,29 @@ sync_individually() {
 	# 对开启微商城的项目做软链接
 	# /home/webs/weshop/application/modules/shop -> /home/webs/haoyadatestdemo/application/modules/shop
 	#
-	if grep -q -e "^${subdir}$" /var/lib/weshop_enabled_hosts ;then
-		# 无条件删除[软链接|文件|文件夹|无] 并 确保上级目录存在
-		if test -n "${subdir}" ;then
-			rm /home/webs/${subdir}/application/modules/{shop,shopadmin,backend,backendadmin,bargain3,bargainactivity,tools,api,card,tag2,urm,weixininvitation,weixinpush} -rf
-			rm /home/webs/${subdir}/library/iWebsite/Plugin/Backend.php -f
-			rm /home/webs/${subdir}/library/iWebsite/Helper/AssetsList.php -f
-			mkdir -p /home/webs/${subdir}/application/modules &>/dev/null
-			mkdir -p /home/webs/${subdir}/library/iWebsite/Plugin &>/dev/null
-			mkdir -p /home/webs/${subdir}/library/iWebsite/Helper &>/dev/null
-		fi
-
-		# 创建软链接
-		if echo "${subdir}" |grep -q -e 'demo$' ;then
-			src_dir='/home/webs/weshopdemo/application/modules/'
-			src_dir2='/home/webs/weshopdemo/library/iWebsite/Plugin/'
-			src_dir3='/home/webs/weshopdemo/library/iWebsite/Helper/'
-		else
-			src_dir='/home/webs/weshop/application/modules/'
-			src_dir2='/home/webs/weshop/library/iWebsite/Plugin/'
-			src_dir3='/home/webs/weshop/library/iWebsite/Helper/'
-		fi
-		for mod_dir in shop shopadmin backend backendadmin bargain3 bargainactivity tools api card tag2 urm weixininvitation weixinpush;do
-			test -d ${src_dir}${mod_dir} && ln -s ${src_dir}${mod_dir} /home/webs/${subdir}/application/modules/${mod_dir}
-		done
-		for plugin_file in Backend.php ;do
-			test -f ${src_dir2}${plugin_file} && ln -s ${src_dir2}${plugin_file} /home/webs/${subdir}/library/iWebsite/Plugin/${plugin_file}
-		done
-		for helper_file in AssetsList.php ;do
-			test -f ${src_dir3}${helper_file} && ln -s ${src_dir3}${helper_file} /home/webs/${subdir}/library/iWebsite/Helper/${helper_file}
+	local weshop_enabled_hosts='/var/lib/weshop_enabled_hosts'	# 开启微商功能的项目编号列表,一行一个
+	local weshop_filelist='/var/lib/weshop_filelist'		# 需要更新的微商项目文件/目录,一行一个
+	if grep -q -e "^${subdir}$" ${weshop_enabled_hosts} ;then
+		local webroot='/home/webs'				# WebRoot目录
+		echo "${subdir}" |grep -q -e 'demo$' && local weshop_dir="${webroot}/weshopdemo"|| local weshop_dir="${webroot}/weshop"	# weshop 项目目录
+		local project_dir="${webroot}/${subdir}"
+		for item in $(cat ${weshop_filelist});do
+			local src_item="${weshop_dir}${item}"
+			local dst_item="${project_dir}${item}"
+			# 无条件删除[软链接|文件|文件夹|无] 并 确保上级目录存在
+			rm ${dst_item} -rf &>/dev/null; mkdir -p ${dst_item%/*} &>/dev/null
+			# 创建软链接
+			if   [ -f ${src_item} ];then
+				ln -s ${src_item} ${dst_item}
+			elif [ -d ${src_item} ];then
+				ln -s ${src_item} ${dst_item%/*}/
+			else
+				:
+			fi
 		done
 	fi
 
-	#按webroot目录,分发项目代码
+	# 按webroot目录,分发项目代码
 	echo -e "分发 /home/webs/${subdir}/ 目录 :\n"
 	for ip in ${APP_IP_ARY[@]} ;do
 		# 现在 10.0.0.1 和 10.0.0.2 也要跑php了,代码要实时同步,注释掉下面这段
@@ -125,7 +115,7 @@ sync_individually() {
 		p_ret $? "分发项目 ${hostname} 代码到 ${ip},分发成功.\n" "分发项目 ${hostname} 代码到 ${ip},分发失败.\n"
 	done
 
-	#按域名清理缓存
+	# 按域名清理缓存
 	if [ "${hostname}" != 'common.umaman.com' -a "${hostname}" != 'ZendFramework-1.12.9-minimal.umaman.com' ] ;then
 		for ip in ${PXY_IP_ARY[@]} ;do
 			echo "${hostname} /" |/usr/bin/gearman -h 211.152.60.33 -f "purge_${ip}" -b
