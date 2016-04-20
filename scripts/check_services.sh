@@ -350,6 +350,9 @@ mongo_slow_query_of_master(){
 	grep -hoe 'idata.*ms$' /tmp/server_log_dir/mongodbp?d3/mongo/mongod.log | grep -v -e 'oplog:' \
 	| awk -F' |"' '{sub(/ms$/,"",$NF);ary1[$1] += 1;ary2[$1] += $NF}END{for(c in ary1) printf "%45-s %8d %8.0f\n",c,ary1[c],ary2[c]/ary1[c]}' \
 	| sort -k2,3nr | head -n 10
+
+	# 查看mongod日志中最耗时的请求
+	#awk '/ms$/{sub(/ms$/,"",$NF);if ($NF>110 && $NF<30000) {print $NF,$0}}' /ssd_volume/60000/log/mongod.log|sort -k1,1nr|less
 }
 
 get_collection_info() {
