@@ -83,6 +83,12 @@ PHPS='
 10.0.0.14:8089
 10.0.0.14:8090
 '
+PY_WX_SRV='
+10.0.0.10:8000
+10.0.0.11:8000
+10.0.0.12:8000
+10.0.0.13:8000
+'
 
 MEMCACHEDS='
 10.0.0.1:11211
@@ -199,6 +205,15 @@ php () {
 	for ip_port in ${PHPS} ;do
 		echo -en "${ip_port}\t"
 		curl -m 3 http://${ip_port}/status 2>/dev/null |grep -e 'active processes' -e 'idle processes' -e 'slow requests'|tr -d ' '|tr '\n' '\t'
+		echo
+	done
+}
+
+pyweixin() {
+	displayheader 'Checking Python-Weixin-Service'
+	for ip_port in ${PY_WX_SRV} ;do
+		echo -en "${ip_port}\t"
+		curl -s -o /dev/null -D - http://${ip_port}|head -n 1
 		echo
 	done
 }
