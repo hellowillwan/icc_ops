@@ -221,7 +221,11 @@ cleanup_ftp_client_ips() {
 	#清理闲置3小时没有活动记录的ip白名单(ftp,iptables)
 	export PATH="/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin"
 	ts_now=$(date '+%s')
-	for ip in $(iptables -L -nv|grep -P -e "ACCEPT.*dports 21,5500:5700"|awk '{print $8}'|grep -v -e '101.231.69.78' -e '27.115.13.12'|sort);do
+	for ip in $(iptables -L -nv|grep -P -e "ACCEPT.*dports 21,5500:5700" \
+	| awk '{print $8}' \
+	| grep -v -e '101.231.69.78' -e '27.115.13.12' -e '180.153.194.242' -e '202.152.186.66' \
+	| sort
+	);do
 		if ! grep -q -e "\"${ip}\"" /var/log/vsftpd.log ;then
 			#该IP没有登陆记录
 			continue
