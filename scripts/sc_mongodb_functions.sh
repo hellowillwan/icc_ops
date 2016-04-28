@@ -8,6 +8,7 @@
 
 # restart mongos and check and report status
 DT2="date '+%Y-%m-%d %H:%M:%S'"
+ICC_SYS_COLL='/var/lib/icc_sys_coll.list'
 
 
 #
@@ -278,7 +279,11 @@ format_collection_name () {
 		if echo -n "$1" |grep -q -e '^idatabase_collection_';then
 			echo "$1"
 		else
-			echo "idatabase_collection_${1}"
+			if grep -q -e "^${1}\$" ${ICC_SYS_COLL};then
+				echo "$1"
+			else
+				echo "idatabase_collection_${1}"
+			fi
 		fi
 }
 
@@ -303,7 +308,7 @@ mongo_sync () {
 	mkdir -p $WORKINGDIR &>/dev/null
 	
 	local DIRECTION="$1"
-	local LOG="$2"
+	local LOG="$2"	# 0 : CUT sc 表单手工同步; 1: CUT api supervisor mongo-connector; 2:resync icc2office in supervisor
 	local DB="$3"
 	local COLLECTIONS=$(echo -n "$4"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
 	if [ "$LOG" -eq 1 ] ;then
@@ -318,6 +323,19 @@ mongo_sync () {
 			:
 		fi
 		/usr/bin/supervisorctl -c /etc/supervisor.conf stop "${proc_name}" &>/dev/null
+	elif [ "$LOG" -eq 2 ] ;then
+		:
+	else
+		# 如果发现手工同步mongo-connector列表中的集合,则禁止
+		for coll_name in $COLLECTIONS ;do
+			if grep -A 5 -e "program:mongo-connector-icc2office" /etc/supervisor.conf \
+			| grep '^command' | head -n 1 | tr ' |,' '\n'|grep -i -P '^(ICCv1\.)'|sed 's/ICCv1.//' \
+			| grep -q -e "^${coll_name}\$"
+			then
+				echo "集合 $coll_name 由 mongo-connector 工具进行实时同步，禁止手工同步."
+				return
+			fi
+		done
 	fi
 
 
