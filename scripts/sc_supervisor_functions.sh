@@ -144,17 +144,21 @@ add_collections() {
 			echo "no program_name found for ${1},exit"
 			return 2
 		fi
+		local direction="$1"
+		local input_colls="$2"
 	fi
 
-	# 处理输入的集合列表,默认格式:逗号间隔的库名.集合名
-	new_collections="$2"
-	# 处理输入的集合列表,默认格式:空格间隔的库名.集合名
-	#new_collections=''
-	#for coll in $2;do
-	#	new_collections="${new_collections}${coll},"
-	#done
+	# 处理输入的集合列表,默认格式:逗号间隔的库名.集合名(可能有多个),如果包含已经在列表中的集合则去掉
+	local new_collections=''
+	local coll_list="$(list_collections $direction | tr ' ' '\n')"
+	for coll in $(echo $input_colls | tr ',' ' ') ; do
+		echo "$coll_list" | grep -q -e "^${coll}\$" || new_collections="${new_collections},${coll}"
+	done
+	local new_collections=$(echo ${new_collections}|sed 's/^,//;s/,$//')
+	if [ -z "${new_collections}" ];then
+		return
+	fi
 
-	#old_cmdline=$(get_cmdline ${program_name})
 	new_cmdline=$(get_cmdline ${program_name} | sed "s/\(${anchor_str}\)/\1,${new_collections}/")
 	set_cmdline ${program_name} "$new_cmdline"
 }
