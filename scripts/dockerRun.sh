@@ -11,11 +11,11 @@ newContainer_for_appserver_php56() {
 	-h app02_icc_appserver_c01 \
 	-v /home/webs:/home/webs \
 	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
-	-v /etc/app_php_conf/php-5.6:/etc/app_php_conf \
+	-v /etc/app_php_conf/php-7.0:/etc/app_php_conf \
 	-v /tmp/icc_appserver_c01:/tmp \
 	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
 	-p 8081:80 \
-	icc_appserver_tengine-2.1.0_php-5.6.10:latest \
+	icc_appserver_tengine-2.1.1_php-7.0.4:latest \
 	/bin/bash
 }
 
@@ -184,15 +184,15 @@ newContainer_for_py_weixin_service() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=3 \
-	--memory=1024M \
+	--cpuset-cpus=0-3 \
+	--memory=2048M \
 	--name=${container_name} \
 	-h ${container_name} \
 	-v /tmp:/tmp \
 	-v /home/webs:/home/webs \
 	-p 8000:8000 \
 	${image_name}:latest \
-	/bin/bash
+	/usr/bin/python /home/webs/icc/scripts/weixin/service.py --logging=None --log=/tmp/py_weixin_service.log
 }
 
 newContainer_for_testing() {
