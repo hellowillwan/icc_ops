@@ -38,7 +38,7 @@ docker_start_all_container() {
 
 docker_run_a_cmd_on_all_container() {
 	if [ -z "$1" ] ;then echo usage:docker_run_a_cmd_on_all_container "cmd";return 1;fi
-	for ctn in `docker ps -a|awk '{print $NF}'|grep -v -e '^NAMES'|tr '\n' ' '`; do
+	for ctn in `docker ps -a|awk '{print $NF}'|grep -v -e '^NAMES'|grep icc_app|tr '\n' ' '`; do
 		echo "${ctn} result: "
 		docker exec -i ${ctn} bash -c "$1" 
 		echo
@@ -73,6 +73,24 @@ php_restart() {
 		echo "${ctn} reload php-fpm : "
 		docker exec -i ${ctn} /etc/init.d/php-fpm restart
 	done
+}
+
+pyweixin_restart() {
+	#for ctn in `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|grep -e 'py_weixin_service'|tr '\n' ' '`; do
+	#	#echo "${ctn} restart python_weixin_service: "
+	#	docker exec -i ${ctn} bash -c "/usr/bin/supervisorctl -c /etc/supervisor.conf restart 'py_weixin_service:py_weixin_service0'"
+	#	#echo $?
+	#done
+	docker restart py_weixin_service_1
+}
+
+pyweixin_status() {
+	#for ctn in `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|grep -e 'py_weixin_service'|tr '\n' ' '`; do
+	#	#echo "${ctn} check python_weixin_service: "
+	#	docker exec -i ${ctn} bash -c "/usr/bin/supervisorctl -c /etc/supervisor.conf status"
+	#	#echo $?
+	#done
+	docker ps|grep -e 'STATUS' -e 'py_weixin_service'
 }
 
 # Source global definitions
