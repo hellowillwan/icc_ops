@@ -190,7 +190,7 @@ cronjob_add() {
 		log_file="${CRON_LOG_DIR}${user_name}_${domain_name}_${cronjob_hash}_\$(date '+\%s').log"
 	fi
 
-	if grep -q "${cronjob_hash}" ${cron_file} ;then
+	if grep -q "${cronjob_hash}" ${cron_file} &>/dev/null ;then
 		echo "不能添加重复的计划任务,请检查后重新提交."
 		return 1
 	fi
