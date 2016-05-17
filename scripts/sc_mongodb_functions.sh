@@ -298,7 +298,7 @@ format_collection_name_uma() {
 }
 
 # 同步Mongdb集合 (双向：线上到内网、内网到线上)
-mongo_sync () {
+mongo_sync_old () {
 	if [ -z "$4" ];then
 		echo "Parameter missing,usage: $0 download|upload 0|1 db_name_for_sync collections_for_sync"
 		return 1
@@ -326,16 +326,21 @@ mongo_sync () {
 	elif [ "$LOG" -eq 2 ] ;then
 		:
 	else
-		# 如果发现手工同步mongo-connector列表中的集合,则禁止
-		for coll_name in $COLLECTIONS ;do
-			if grep -A 5 -e "program:mongo-connector-icc2office" /etc/supervisor.conf \
-			| grep '^command' | head -n 1 | tr ' |,' '\n'|grep -i -P '^(ICCv1\.)'|sed 's/ICCv1.//' \
-			| grep -q -e "^${coll_name}\$"
-			then
-				echo "集合 $coll_name 由 mongo-connector 工具进行实时同步，禁止手工同步."
-				return
-			fi
-		done
+		# CUT 表单同步 prod_icc-to-dev_icc 没有必要禁止同步了
+		:
+		## 如果发现手工同步mongo-connector列表中的集合,则禁止
+		#for coll_name in $COLLECTIONS ;do
+		#	# 补全集合名称
+		#	[ "${DB}" = 'ICCv1' -o "${DB}" = 'bda' ] && coll_name=$(format_collection_name "$coll_name")
+		#	[ "${DB}" = 'umav3' ] && coll_name=$(format_collection_name_uma "$coll_name")
+		#	if grep -A 5 -e "program:mongo-connector-prod_icc-to-dev_bda" /etc/supervisor.conf \
+		#	| grep '^command' | head -n 1 | tr ' |,' '\n'|grep -i -P '^(ICCv1\.)'|sed 's/ICCv1.//' \
+		#	| grep -q -e "^${coll_name}\$"
+		#	then
+		#		echo "集合 $coll_name 由 mongo-connector 工具进行实时同步，禁止手工同步."
+		#		return
+		#	fi
+		#done
 	fi
 
 
@@ -415,6 +420,147 @@ mongo_sync () {
 			echo "集合不存在或为空,无法导入"
 		fi
 	done
+
+	if [ "$LOG" -eq 1 ] ;then
+		# 启动supervisor mongo-connector
+		/usr/bin/supervisorctl -c /etc/supervisor.conf start "${proc_name}" &>/dev/null
+	fi
+}
+
+# 同步Mongdb集合 单个集合,支持指定目的库名和集合名
+mongo_sync () {
+	if [ -z "$4" ];then
+		echo "Parameter missing,usage: $0 download|upload 0|1|2 src_db src_coll [dst_db dst_coll]"
+		return 1
+	fi
+
+	# 临时目录 存放dump文件 
+	WORKINGDIR='/tmp/mongo_sync'
+	mkdir -p $WORKINGDIR &>/dev/null
+
+	local DIRECTION="$1"
+	local LOG="$2"	# 0: CUT sc 表单手工同步; 1: CUT api supervisor mongo-connector; 2: resync icc2office in supervisor
+	local SRC_DB="$3"
+	local SRC_COLLECTION=$(echo -n "$4"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+
+	# 补全源集合名称
+	[ "${SRC_DB}" = 'ICCv1' -o "${SRC_DB}" = 'bda' ] && local SRC_COLLECTION=$(format_collection_name "$SRC_COLLECTION")
+	[ "${SRC_DB}" = 'umav3' ] && local SRC_COLLECTION=$(format_collection_name_uma "$SRC_COLLECTION")
+
+	# 确定目的库名集合名
+	if [ -z "$5" ];then
+		local DST_DB=$SRC_DB
+	else
+		local DST_DB=$5
+	fi
+
+	if [ -z "$6" ];then
+		local DST_COLLECTION=$SRC_COLLECTION
+	else
+		local DST_COLLECTION=$(echo -n "$6"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	fi
+
+	# 补全目的集合名称
+	[ "${DST_DB}" = 'ICCv1' -o "${DST_DB}" = 'bda' ] && local DST_COLLECTION=$(format_collection_name "$DST_COLLECTION")
+	[ "${DST_DB}" = 'umav3' ] && local DST_COLLECTION=$(format_collection_name_uma "$DST_COLLECTION")
+
+	if [ "$LOG" -eq 1 ] ;then
+		# 记录集合同步状态
+		local STATS_FILE='/var/log/mongo_sync.stats'
+		# 停止supervisor mongo-connector
+		if [ "$DIRECTION" = 'download' ];then
+			local proc_name='mongo-connector-prod_icc-to-dev_bda:mongo-connector-prod_icc-to-dev_bda0'
+		elif [ "$DIRECTION" = 'upload' ];then
+			local proc_name='mongo-connector-bda_from_office:mongo-connector-bda_from_office0'
+		else
+			:
+		fi
+		/usr/bin/supervisorctl -c /etc/supervisor.conf stop "${proc_name}" &>/dev/null
+	elif [ "$LOG" -eq 2 ] ;then
+		:
+	else
+		# CUT 表单同步 prod_icc-to-dev_icc 没有必要禁止同步了
+		:
+		## 如果发现手工同步mongo-connector列表中的集合,则禁止
+		#if grep -A 5 -e "program:mongo-connector-prod_icc-to-dev_bda" /etc/supervisor.conf \
+		#	| grep '^command' | head -n 1 | tr ' |,' '\n'|grep -i -P '^(ICCv1\.)'|sed 's/ICCv1.//' \
+		#	| grep -q -e "^${SRC_COLLECTION}\$"
+		#then
+		#		echo "集合 $SRC_COLLECTION 由 mongo-connector 工具进行实时同步，禁止手工同步."
+		#		return
+		#fi
+	fi
+
+	if [ ${DIRECTION} = 'download' ];then
+		SRC_ENV='产生'
+		SRC_HOST='10.0.0.31'
+		SRC_PORT=57017
+		if [ "${SRC_DB}" = 'umav3' ];then
+			SRC_HOST='10.0.0.41'
+			SRC_PORT=40000
+		fi
+		DST_ENV='dev'
+		DST_HOST='10.0.0.200'
+		DST_PORT=37017
+	elif [ ${DIRECTION} = 'upload' ];then
+		SRC_ENV='dev'
+		SRC_HOST='10.0.0.200'
+		SRC_PORT=37017
+		DST_ENV='生产'
+		DST_HOST='10.0.0.31'
+		DST_PORT=57017
+		if [ "$SRC_DB" = 'ICCv1' ];then
+			echo 'upload any collection to ICCv1 was prohibited,nothing done,exit.'
+			return 1
+		fi
+	else
+		echo 'unkonw direction.'
+		return 1
+	fi
+
+	#dump from SRC_HOST:SRC_PORT/SRC_DB SRC_COLLECTION
+	[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dumping" >> $STATS_FILE
+	/home/60000/bin/mongodump -h ${SRC_HOST} --port ${SRC_PORT} -d "${SRC_DB}" -c "${SRC_COLLECTION}" -o $WORKINGDIR &> /dev/null
+	if [ "$?" -eq 0 ];then
+		local dump_result="成功"
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dump_ok" >> $STATS_FILE
+	else
+		local dump_result="失败"
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dump_fail" >> $STATS_FILE
+	fi
+	local src_records_number=$(echo "db.getCollection('${SRC_COLLECTION}').count()" | /home/60000/bin/mongo ${SRC_HOST}:${SRC_PORT}/${SRC_DB} \
+	| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
+	
+	echo -e "导出 ${SRC_ENV} 环境 ${SRC_DB}.${SRC_COLLECTION} : ${dump_result} 文档数量 : $src_records_number\n"
+
+	#restore to DST_HOST:DST_PORT/DST_DB DST_COLLECTION
+	[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restoring" >> $STATS_FILE
+	if [ $src_records_number -gt 0 ] && [ -s "${WORKINGDIR}/${SRC_DB}/${SRC_COLLECTION}.bson" ] ; then
+		# 如果bson文件大于零,即集合有数据,进行导入目的环境.导入操作可能会失败,可能需要导入多次,这里设置最多导入2次 or 两边记录数相等
+		local restore_times=0	# 计数器
+		local dst_records_number=0
+		until [ $restore_times -ge 2 ] || [ $dst_records_number -eq $src_records_number ] ;do
+			/home/60000/bin/mongorestore --drop -h ${DST_HOST} --port ${DST_PORT} \
+			-d "${DST_DB}" -c "${DST_COLLECTION}" ${WORKINGDIR}/"${SRC_DB}"/${SRC_COLLECTION}.bson &> /dev/null
+			if [ "$?" -eq 0 ];then
+				local restore_result="成功"
+				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restore_ok" >> $STATS_FILE
+			else
+				local restore_result="失败"
+				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restore_fail" >> $STATS_FILE
+			fi
+			local dst_records_number=$(echo "db.getCollection('${DST_COLLECTION}').count()" \
+				| /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DST_DB} \
+				| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
+			local restore_times=$((${restore_times}+1))	# 计数器加1
+		done
+
+		echo "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : ${restore_result} 文档数量 : $dst_records_number"
+	else
+		#bson文件为空
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#no_file_to_restore" >> $STATS_FILE
+		echo "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : 集合不存在或为空,无法导入"
+	fi
 
 	if [ "$LOG" -eq 1 ] ;then
 		# 启动supervisor mongo-connector

@@ -43,9 +43,9 @@ resync_connector() {
 		);do
 			col_base64=$(echo -n $col|base64)
 			if [ "${program_name}" = 'mongo-connector-prod_icc-to-dev_bda' ];then
-				mongo_sync2 download 2 ICCv1 ${col_base64} bda
+				mongo_sync download 2 ICCv1 ${col_base64} bda
 			elif [ "${program_name}" = 'mongo-connector-prod_icc-to-dev_icc' ];then
-				mongo_sync2 download 2 ICCv1 ${col_base64}
+				mongo_sync download 2 ICCv1 ${col_base64}
 			else
 				:
 			fi
@@ -56,5 +56,5 @@ resync_connector() {
 	fi
 }
 
-#resync_connector mongo-connector-prod_icc-to-dev_icc
+resync_connector mongo-connector-prod_icc-to-dev_icc
 resync_connector mongo-connector-prod_icc-to-dev_bda
