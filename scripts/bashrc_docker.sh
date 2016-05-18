@@ -67,11 +67,13 @@ ngx_restart() {
 
 php_restart() {
 	for ctn in `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|grep -e 'icc_appserver'|tr '\n' ' '`; do
-		echo "${ctn} reload nginx : "
-		docker exec -i ${ctn} /usr/local/tengine/sbin/nginx -s reload
-		echo $?
-		echo "${ctn} reload php-fpm : "
+		echo "${ctn} stop nginx : "
+		docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx -s stop &>/dev/null; /usr/local/tengine/sbin/nginx -s stop &>/dev/null'
+		echo "${ctn} restart php-fpm : "
 		docker exec -i ${ctn} /etc/init.d/php-fpm restart
+		echo "${ctn} start nginx : "
+		docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx'
+		echo $?
 	done
 }
 
