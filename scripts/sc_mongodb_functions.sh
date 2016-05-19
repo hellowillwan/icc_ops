@@ -313,7 +313,7 @@ mongo_sync () {
 	local DIRECTION="$1"
 	local LOG="$2"	# 0: CUT sc 表单手工同步; 1: CUT api supervisor mongo-connector; 2: resync icc2office in supervisor
 	local SRC_DB="$3"
-	local SRC_COLLECTION=$(echo -n "$4"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	local SRC_COLLECTION=$(echo "$4"|base64 -d 2>/dev/null|sort|uniq|grep -v -P '^[ |\t]*$')
 
 	# 补全源集合名称
 	local SRC_COLLECTION=$(format_collection_name "$SRC_DB" "$SRC_COLLECTION")
@@ -328,7 +328,7 @@ mongo_sync () {
 	if [ -z "$6" ];then
 		local DST_COLLECTION=$SRC_COLLECTION
 	else
-		local DST_COLLECTION=$(echo -n "$6"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+		local DST_COLLECTION=$(echo "$6"|base64 -d 2>/dev/null|sort|uniq|grep -v -P '^[ |\t]*$')
 	fi
 
 	# 补全目的集合名称
@@ -448,7 +448,7 @@ check_mongo_sync() {
 
 	local DIRECTION="$1"
 	local DB="$2"
-	local COLLECTIONS=$(echo -n "$3"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	local COLLECTIONS=$(echo -n "$3"|base64 -d 2>/dev/null|sort|uniq|grep -v -P '^[ |\t]*$')
 	local STATS_FILE='/var/log/mongo_sync.stats'
 	awk -F'#' "/#${DIRECTION}#${DB}#${COLLECTIONS}#/{print \$NF}" $STATS_FILE |tail -n 1
 }
@@ -464,7 +464,7 @@ mongo_copy () {
 	mkdir -p $WORKINGDIR &>/dev/null
 	
 	local DB="$1"
-	#local COLLECTIONS=$(echo -n "$2"|base64 -d|sort|uniq|grep -v -P '^[ |\t]*$')
+	#local COLLECTIONS=$(echo -n "$2"|base64 -d 2>/dev/null|sort|uniq|grep -v -P '^[ |\t]*$')
 	local SRC_COLLECTIONS=$(echo -n "$2"|sort|uniq|grep -v -P '^[ |\t]*$')
 	local DST_COLLECTIONS=$(echo -n "$3"|sort|uniq|grep -v -P '^[ |\t]*$')
 	
