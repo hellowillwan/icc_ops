@@ -20,7 +20,7 @@ resync_connector() {
 	fi
 
 	# Generate a mongo-connector timestamp file
-	ts_file=$(grep -A 5 -e "program:${program_name}" ${supervisorcfg} | grep '^command'|tr ' ' '\n'|grep -e 'oplog.*timestamp')
+	ts_file=$(grep -A 5 -P "^[ |\t]*\[program:${program_name}\]" ${supervisorcfg} | grep '^command'|tr ' ' '\n'|grep -e 'oplog.*timestamp')
 	# stop mongo-connector
 	/usr/bin/supervisorctl -c ${supervisorcfg} stop "${program_name}:${program_name}0" &>/dev/null
 	/usr/bin/supervisorctl -c ${supervisorcfg} stop "${program_name}:${program_name}0" &>/dev/null
@@ -42,9 +42,9 @@ resync_connector() {
 			| tr ' |,' '\n'|grep -i -P '^ICCv1\.' | sed 's/ICCv1.//' # | grep '568f1b7eb1752f4c358b54ed' # | grep -v -e '^idatabase_collection_'
 		);do
 			col_base64=$(echo -n $col|base64)
-			if [ "${program_name}" = 'mongo-connector-prod_icc-to-dev_bda' ];then
-				mongo_sync download 2 ICCv1 ${col_base64} bda
-			elif [ "${program_name}" = 'mongo-connector-prod_icc-to-dev_icc' ];then
+			if [ "${program_name}" = 'mongo-connector-prod_iccv1-to-dev_iccv1ro' ];then
+				mongo_sync download 2 ICCv1 ${col_base64} ICCv1RO
+			elif [ "${program_name}" = 'mongo-connector-prod_iccv1-to-dev_iccv1' ];then
 				mongo_sync download 2 ICCv1 ${col_base64}
 			else
 				:
@@ -56,5 +56,5 @@ resync_connector() {
 	fi
 }
 
-resync_connector mongo-connector-prod_icc-to-dev_icc
-resync_connector mongo-connector-prod_icc-to-dev_bda
+resync_connector mongo-connector-prod_iccv1-to-dev_iccv1
+resync_connector mongo-connector-prod_iccv1-to-dev_iccv1ro
