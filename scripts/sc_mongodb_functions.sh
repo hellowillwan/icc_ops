@@ -398,8 +398,9 @@ mongo_sync () {
 		local dump_result="失败"
 		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dump_fail" >> $STATS_FILE
 	fi
-	local src_records_number=$(echo "db.getCollection('${SRC_COLLECTION}').count()" | /home/60000/bin/mongo ${SRC_HOST}:${SRC_PORT}/${SRC_DB} \
-	| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
+	local src_records_number=$(echo "db.getCollection('${SRC_COLLECTION}').count()" \
+		| /home/60000/bin/mongo ${SRC_HOST}:${SRC_PORT}/${SRC_DB} 2>/dev/null \
+		| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
 	
 	echo -e "导出 ${SRC_ENV} 环境 ${SRC_DB}.${SRC_COLLECTION} : ${dump_result} 文档数量 : $src_records_number\n"
 
@@ -420,7 +421,7 @@ mongo_sync () {
 				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restore_fail" >> $STATS_FILE
 			fi
 			local dst_records_number=$(echo "db.getCollection('${DST_COLLECTION}').count()" \
-				| /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DST_DB} \
+				| /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DST_DB} 2>/dev/null \
 				| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
 			local restore_times=$((${restore_times}+1))	# 计数器加1
 		done
