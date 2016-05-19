@@ -107,7 +107,7 @@ list_collections() {
 		return 1
 	else
 		if [ "$1" = 'download' ];then
-			program_name=mongo-connector-prod_icc-to-dev_bda
+			program_name=mongo-connector-prod_iccv1-to-dev_iccv1ro
 			get_cmdline ${program_name} |tr ' |,' '\n'|grep -i -P '^(ICCv1\.)'|tr '\n' ' '
 		elif [ "$1" = 'upload' ];then
 			program_name=mongo-connector-bda_from_office
@@ -117,52 +117,6 @@ list_collections() {
 			return 2
 		fi
 	fi
-	#get_cmdline ${program_name} |tr ' |,' '\n'|grep -i -P '^(ICCv1\.|bda\.)'|tr '\n' ' '
-}
-
-# 检查集合名称
-#format_collection_name () {
-#		# 检查集合名称
-#		if echo -n "$1" |grep -q -e '^idatabase_collection_';then
-#			echo "$1"
-#		else
-#			echo "idatabase_collection_${1}"
-#		fi
-#}
-
-# 添加mongo-connector项目的命令行参数---集合
-add_collections_old() {
-	if [ -z "$2" ] ;then
-		echo "Action parameter missing."
-		return 1
-	else
-		if [ "$1" = 'download' ];then
-			program_name=mongo-connector-icc2office
-			anchor_str='ICCv1.idatabase_logs'
-		elif [ "$1" = 'upload' ];then
-			program_name=mongo-connector-bda_from_office
-			anchor_str='bda.idatabase_logs'
-		else
-			echo "no program_name found for ${1},exit"
-			return 2
-		fi
-		local direction="$1"
-		local input_colls="$2"
-	fi
-
-	# 处理输入的集合列表,默认格式:逗号间隔的库名.集合名(可能有多个),如果包含已经在列表中的集合则去掉
-	local new_collections=''
-	local coll_list="$(list_collections $direction | tr ' ' '\n')"
-	for coll in $(echo $input_colls | tr ',' ' ') ; do
-		echo "$coll_list" | grep -q -e "^${coll}\$" || new_collections="${new_collections},${coll}"
-	done
-	local new_collections=$(echo ${new_collections}|sed 's/^,//;s/,$//')
-	if [ -z "${new_collections}" ];then
-		return
-	fi
-
-	new_cmdline=$(get_cmdline ${program_name} | sed "s/\(${anchor_str}\)/\1,${new_collections}/")
-	set_cmdline ${program_name} "$new_cmdline"
 }
 
 # 添加mongo-connector项目的命令行参数---集合 新增 集合对应关系 -n ... -g ...
@@ -172,7 +126,7 @@ add_collections() {
 		return 1
 	else
 		if [ "$1" = 'download' ];then
-			program_name=mongo-connector-prod_icc-to-dev_bda
+			program_name=mongo-connector-prod_iccv1-to-dev_iccv1ro
 			#anchor_str='ICCv1.idatabase_logs'
 		elif [ "$1" = 'upload' ];then
 			program_name=mongo-connector-bda_from_office
@@ -198,7 +152,7 @@ add_collections() {
 
 	# 编辑新的命令行 保存
 	if [ "$direction" = 'download' ] ;then
-		new_collections_dst=$(echo $new_collections | sed 's/ICCv1\./bda\./g')
+		new_collections_dst=$(echo $new_collections | sed 's/ICCv1\./ICCv1RO\./g')
 		new_cmdline=$(get_cmdline ${program_name} | sed "s/\( -n \)/\1${new_collections},/;s/\( -g \)/\1${new_collections_dst},/")
 	elif [ "$direction" = 'upload' ];then
 		new_cmdline=$(get_cmdline ${program_name} | sed "s/\(${anchor_str}\)/\1,${new_collections}/")
