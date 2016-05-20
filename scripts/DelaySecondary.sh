@@ -34,6 +34,11 @@ echo diff: $[$ts2-$ts1]
 # /home/60102/bin/mongorestore --drop -h 10.0.0.30 --port 57017 -d ICCv1 -c idatabase_collection_573eb5c0311f8afe048b4597  /tmp/0517/bda/idatabase_collection_569459f3af52d5f9398b4569.bson
 # /home/60102/bin/mongorestore --drop -h 10.0.0.30 --port 57017 -d ICCv1 -c idatabase_collection_573eb5c0311f8afe048b4597  /tmp/0518/bda/idatabase_collection_569459f3af52d5f9398b4569.bson
 
+# 查询恢复的数据 时间倒序排序
+#
+#> db.getCollection('idatabase_collection_569459f3af52d5f9398b4569').find( { }, { } ).sort( { __MODIFY_TIME__:-1,__CREATE_TIME__:-1} ).limit(10).skip(0);
+
+
 
 # 可能需要查 oplog
 #
