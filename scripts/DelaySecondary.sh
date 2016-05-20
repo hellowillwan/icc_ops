@@ -35,3 +35,6 @@ echo diff: $[$ts2-$ts1]
 # /home/60102/bin/mongorestore --drop -h 10.0.0.30 --port 57017 -d ICCv1 -c idatabase_collection_573eb5c0311f8afe048b4597  /tmp/0518/bda/idatabase_collection_569459f3af52d5f9398b4569.bson
 
 
+# 可能需要查 oplog
+#
+# > db.oplog.rs.findOne({"ns" :"bda.idatabase_collection_569459f3af52d5f9398b4569","ts" :{$gt: Timestamp(1463328000, 0000)}});
