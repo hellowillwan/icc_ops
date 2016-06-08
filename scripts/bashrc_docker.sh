@@ -96,10 +96,23 @@ pyweixin_status() {
 }
 
 swoolechat_restart() {
-	local ctn='app03_icc_appserver_c01'
+	port="$1"
+	if [ "$port" = '9503' ];then
+		local ctn='app05_icc_appserver_c09'
+		local project="160523fg0262"
+	elif [ "$port" = '9504' ];then
+		local ctn='app05_icc_appserver_c08'
+		local project="zhibodemo"
+	elif [ "$port" = '9505' ];then
+		local ctn='app05_icc_appserver_c07'
+		local project="zhibo"
+	else
+		:
+	fi
+	
 	docker restart ${ctn}
-	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/160523fg0262demo/swoolchat/webim_server.php &" &
-	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/160523fg0262demo/swoolchat/webim_server.php'"
+	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/swoolchat/webim_server.php &" &
+	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoolchat/webim_server.php'"
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm restart' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm status' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx' # &>/dev/null
