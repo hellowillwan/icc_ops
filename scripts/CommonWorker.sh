@@ -341,6 +341,10 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 return code:$ret
 		exit $ret
 	        ;;
+	swoolechat_restart)
+		/usr/bin/func 'app05' call command run '. ~/.bashrc;swoolechat_restart' &
+		echo 'should be restarted.'
+	        ;;
 	flush_alicdn)
 		source /usr/local/sbin/sc_cdn_functions.sh
 		$cmd $p3 $p4 | logger
