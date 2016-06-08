@@ -13,6 +13,7 @@ DT2="date '+%Y-%m-%d %H:%M:%S'"
 localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
 proxy_cfg_path='/home/proxy_nginx_conf/'
 proxy_cfg_template='/usr/local/share/commonworker/proxy_cfg_template'
+proxy_cfg_template_demo='/usr/local/share/commonworker/proxy_cfg_template_demo'
 proxy_cache_cfg='/home/proxy_nginx_conf/cache-zone.conf'
 app_cfg_path='/home/app_nginx_conf/'
 app_cfg_template='/usr/local/share/commonworker/app_cfg_template'
@@ -155,10 +156,12 @@ add_project ()
 		#项目是否是demo
 		if echo "$project_code" | grep -e 'demo$' &>/dev/null ;then
 			# 配置文件路径
-			subpath='demo/'
+			local subpath='demo/'
+			local proxy_cfg_t="$proxy_cfg_template_demo"
 		else
 			# 配置文件路径
-			subpath='vhost/'
+			local subpath='vhost/'
+			local proxy_cfg_t="$proxy_cfg_template"
 		fi
 		#专门服务静态资源的域名
 		project_domain_static="${project_code}.umaman.net"
@@ -185,11 +188,12 @@ add_project ()
 
 		#生成项目proxy配置
 		#proxy_cache zone
+		echo "$project_code" | grep -q -e 'demo$' &>/dev/null || \
 		grep -e "keys_zone=$project_domain:" "$proxy_cache_cfg" || \
 		echo "proxy_cache_path /home/proxy/cache/$project_domain levels=1:2 keys_zone=$project_domain:200m inactive=12h max_size=10g;" \
 		>> $proxy_cache_cfg
 		#proxy_cfg
-		cat $proxy_cfg_template | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
+		cat $proxy_cfg_t | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
 						-e "s/CACHE_ZONE_NAME/$CACHE_ZONE_NAME/g" > $proxy_cfg_path$subpath$project_code.conf 
 		if [ $? -gt 0 ];then
 			#proxy_cfg创建失败,返回
@@ -327,6 +331,13 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		source /usr/local/sbin/sc_nginx_php_functions.sh
 		$cmd
 		ret=$?
+		logger CommonWorker $p1 $p2 return code:$ret
+		exit $ret
+	        ;;
+	restart_all_pyweixin)
+		/usr/bin/func 'app*' call command run '. ~/.bashrc;pyweixin_restart'
+		ret=$?
+		/usr/local/sbin/check_services.sh pyweixin 2>&1
 		logger CommonWorker $p1 $p2 return code:$ret
 		exit $ret
 	        ;;
