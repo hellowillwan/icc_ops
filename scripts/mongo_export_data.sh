@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-#导出mongodb指定库指定集合的数据到csv文件,转码并压缩
+# 导出mongodb指定库指定集合的数据到csv文件,转码并压缩.
+# 有些字段是个对象,内嵌文档,这种情况导出的数据可读性很差.
 #
 
 MONGO='/home/60000/bin/mongo'
@@ -64,6 +65,7 @@ export_data () {
 	FIELDS=$(get_collection_fields ${DB} ${COLLECTION})
 	
 	#导出
+		#-q '{"__CREATE_TIME__":{$gte:ISODate("2016-06-05T16:00:00.000Z"),$lte:ISODate("2016-06-06T16:00:00.000Z")}}' \
 		#-q '{$or:[{"hid":"4446fcecdf854721b8388f323c6fe4d2"},{"hid":"29769ba0b41f4576bef5be0807e8c4c2"}]}' \
 		#-q '{ "hid": { $in: ["4446fcecdf854721b8388f323c6fe4d2","29769ba0b41f4576bef5be0807e8c4c2" ] } }' \
 		#-q '{"subscribe":true}' \
