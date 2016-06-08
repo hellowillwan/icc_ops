@@ -88,6 +88,13 @@ PY_WX_SRV='
 10.0.0.11:8000
 10.0.0.12:8000
 10.0.0.13:8000
+10.0.0.14:8000
+'
+SWCHAT_SRV='
+10.0.0.12:9503
+10.0.0.14:9503
+10.0.0.14:9504
+10.0.0.14:9505
 '
 
 MEMCACHEDS='
@@ -212,6 +219,15 @@ php () {
 pyweixin() {
 	displayheader 'Checking Python-Weixin-Service'
 	for ip_port in ${PY_WX_SRV} ;do
+		echo -en "${ip_port}\t"
+		curl -s -o /dev/null -D - http://${ip_port}|head -n 1
+		echo
+	done
+}
+
+swoolechat() {
+	displayheader 'Checking SwooleChat'
+	for ip_port in ${SWCHAT_SRV} ;do
 		echo -en "${ip_port}\t"
 		curl -s -o /dev/null -D - http://${ip_port}|head -n 1
 		echo
@@ -387,6 +403,7 @@ if [ -z "$1" ] ;then
 	load
 	nginx
 	php
+	swoolechat
 	httpd
 	memcached
 	redis
@@ -398,6 +415,8 @@ if [ -z "$1" ] ;then
 elif [ "$1" = 'web' -o "$1" = "nginx_php" ];then
 	nginx
 	php
+elif [ "$1" = 'sw' -o "$1" = "swoolechat" ];then
+	swoolechat
 elif [ "$1" = 'php' -o "$1" = "php_stat" ];then
 	php_terminating
 	php_tooslow
