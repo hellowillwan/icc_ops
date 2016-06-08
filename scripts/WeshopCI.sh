@@ -6,13 +6,14 @@
 # 变量
 #
 weshop_enabled_hosts='/var/lib/weshop_enabled_hosts'	# 开启微商功能的项目编号列表,一行一个
+weshop_m2_enabled_hosts='/var/lib/weshop_m2_enabled_hosts'	# 开启微商功能的项目编号列表,一行一个
 weshop_filelist='/var/lib/weshop_filelist'		# 需要更新的微商项目文件/目录,一行一个
 webroot='/home/webs/dev'				# 内网dev环境(dev.umaman.xyz域名)的 WebRoot目录
 weshop_dir="${webroot}/weshop"				# 内网dev环境(dev.umaman.xyz域名)的 weshop 项目目录
 svncmd='/usr/bin/svn '
 svnoptions=' --config-dir /var/lib/.subversion --no-auth-cache --non-interactive --username young --password 123456 '
 rsynccmd="/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync -vzrpt --blocking-io --exclude='.svn' --exclude='.git' --exclude='*.log' --exclude='.buildpath' --exclude='.project' --exclude='.gitignore' --exclude='/cache/*' --exclude='/logs/*' "
-rsyncserver='211.152.60.33'
+rsyncserver='211.152.60.42'
 
 # 函数
 #
@@ -62,29 +63,68 @@ update_to_all_projects() {
 	done
 }
 
-# 为各个项目编译打包(webpack?),并提交到项目SVN仓库
-pack() {
+# 同步线上生产环境 weshop 前端代码到 dev环境开启微商的具体项目
+weshop_prod_to_all_projects() {
 	# 默认更新到所有开启微商的项目,可以接受参数只更新到指定项目
 	if [ -z "$1" ];then
-		projects=$(cat ${weshop_enabled_hosts})
+		local projects=$(cat ${weshop_enabled_hosts})
 	else
-		projects="$1"
+		local projects="$1"
+	fi
+
+	for project_code in ${projects} ;do
+		if test -d /home/webs/dev/${project_code}/public/html/m2 ;then 
+			#local src_dir='web/weshop/public/html/m2/'
+			local src_dir='/home/webs/dev/weshop/public/html/m2/'
+			local dst_dir="/home/webs/dev/${project_code}/public/html/m2/"
+		else
+			#local src_dir='web/weshop/public/html/m2'
+			local src_dir='/home/webs/dev/weshop/public/html/m2'
+			local dst_dir="/home/webs/dev/${project_code}/public/html/"
+		fi
+		# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
+		/usr/bin/rsync \
+		-vzrpt \
+		--blocking-io \
+		--exclude='svn' \
+		--exclude='diff' \
+		${src_dir} ${dst_dir}
+		# 211.152.60.42::${src_dir} ${dst_dir}	# 从线上正式环境拉取
+	done
+}
+
+# 为各个项目编译打包(webpack m2),并提交到项目SVN仓库
+pack_m2_and_commit() {
+	# 只更新到指定项目
+	if [ -z "$1" ];then
+		echo no project_code
+		return 1
+	else
+		local projects="$1"
 	fi
 
 	for project in ${projects};do
-		workingdir="${webroot}/${project}/public/html/m"
-		echo $workingdir;continue
+		workingdir="${webroot}/${project}/public/html/m2/"
 		if [ ! -d ${workingdir} ];then
 			echo "dir: ${workingdir} not exits."
 			continue
 		fi
-		cd ${workingdir}
-		${svncmd} ${svnoptions} up
-		npm i
-		npm run build2
-		${svncmd} ${svnoptions} --force add ${workingdir}/dist/images
-		${svncmd} ${svnoptions} --force add ${workingdir}/dist/js/*.js
-		${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/dist
+
+		# 删除项目 m2 目录下的 node_modules,并链接到全局目录
+		rm ${workingdir}/node_modules -rf
+		ln -s /var/lib/node_modules ${workingdir}
+		# 更新
+		# ${svncmd} ${svnoptions} up ${workingdir}
+		# 打包
+		( cd ${workingdir} ; gulp pro )
+		
+		# 删除项目 m2 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
+		rm ${workingdir}/node_modules -rf
+		${svncmd} ${svnoptions} --force add ${workingdir}/
+		# ${svncmd} ${svnoptions} --force add ${workingdir}/dist/images
+		# ${svncmd} ${svnoptions} --force add ${workingdir}/dist/js/*.js
+		# ${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/dist
+		${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/
 	done
 }
 
@@ -133,18 +173,54 @@ checkoutver() {
 
 # 发布各个项目的编译打包后的文件( dev -> demo,sync_individually )
 dev2demo() {
-	for project in p r o j c t s;do
-		rsync pack 211.152.60.33:${webroot}/${project}demo/path/
-		# $RSYNCCMD '$item' '${RSYNCSERVER}::${RSYNCMODULE}/${dst_item}
-		sync_individually ${project}demo
+	# 只发布指定项目
+	if [ -z "$1" ];then
+		echo no project_code
+		return 1
+	else
+		local projects="$1"
+	fi
+
+	for project in ${projects} ;do
+		# 发布到demo
+		/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
+		/usr/bin/rsync \
+		-vzrpt \
+		--blocking-io \
+		--exclude='svn' \
+		--exclude='diff' \
+		/home/webs/dev/${project}/public/html/m2/ 211.152.60.42::web/${project}demo/public/html/m2/
+		# 分发到所有节点
+		localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
+		echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.42 -f CommonWorker_10.0.0.200
 	done
 }
 
 # 同步各个项目的编译打包后的文件( demo -> prod,sync_individually )
 demo2prod() {
 	for project in p r o j c t s;do
-		rsync pack 211.152.60.33:${webroot}/${project}demo/path/
-		# echo $commonworker_key sync_demo_prod $item $dst_item |/usr/bin/gearman -h 211.152.60.33 -f CommonWorker_{$node_ips['host200']}
+		rsync pack 211.152.60.42:${webroot}/${project}demo/path/
+		# echo $localkey sync_demo_prod $item $dst_item |/usr/bin/gearman -h 211.152.60.42 -f CommonWorker_{$node_ips['host200']}
 		sync_individually ${project}
+	done
+}
+
+weshop_sync_prod() {
+	# 默认更新到所有开启微商m2的项目,可以接受参数只更新到指定项目
+	if [ -z "$1" ];then
+		local PROJECTS=$(cat ${weshop_m2_enabled_hosts})
+	else
+		local PROJECTS="$1"
+	fi
+
+	for project in ${PROJECTS} ;do
+		echo "$(date) 项目: $project"
+		echo -en "从线上 weshop 正式环境拉取 m2 目录\n\t"
+			weshop_prod_to_all_projects $project 2>&1 |tail -n 1
+		echo -en "打包 m2 并提交到项目 $project SVN\n\t"
+			pack_m2_and_commit $project 2>&1 #|tail -n 1
+		#echo -en "发布项目 $project 到 demo 环境\n\t"
+		#	dev2demo $project 2>&1 |tail -n 1
+		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	done
 }
