@@ -95,6 +95,17 @@ pyweixin_status() {
 	docker ps|grep -e 'STATUS' -e 'py_weixin_service'
 }
 
+swoolechat_restart() {
+	local ctn='app03_icc_appserver_c01'
+	docker restart ${ctn}
+	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/160523fg0262demo/swoolchat/webim_server.php &" &
+	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/160523fg0262demo/swoolchat/webim_server.php'"
+	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm restart' #&>/dev/null
+	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm status' #&>/dev/null
+	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx' # &>/dev/null
+	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx -s reload' # &>/dev/null
+}
+
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
