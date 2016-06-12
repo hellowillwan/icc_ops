@@ -17,12 +17,42 @@ uma(){
 }
 
 iwebsite2() {
-	# 监测 http://iwebsite2.umaman.com/
-	if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/ | grep -i -e '^Welcome to visit our website!$' -q ;then
-		echo 1
-	else
-		echo 0
+	if [ -z "$1" ] ;then
+		# 监测 http://iwebsite2.umaman.com/
+		if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/ \
+			| grep -i -e '^Welcome to visit our website!$' -q ;then
+			local result=1
+		else
+			local result=0
+		fi
+	elif [ "$1" = 'memcache' ];then
+		# 监测 http://iwebsite2.umaman.com/invoke/index/memcache
+		if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/invoke/index/memcache \
+			| grep -i -e '^ok$' -q ;then
+			local result=1
+		else
+			local result=0
+		fi
+	elif [ "$1" = 'redis' ];then
+		# 监测 http://iwebsite2.umaman.com/invoke/index/redis
+		if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/invoke/index/redis \
+			| grep -i -e '^ok$' -q ;then
+			local result=1
+		else
+			local result=0
+		fi
+	elif [ "$1" = 'mongodb' ];then
+		# 监测 http://iwebsite2.umaman.com/invoke/index/mongodb
+		if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/invoke/index/mongodb \
+			| tr '\n' ' '|grep -i -e '__CREATE_TIME__.*__MODIFY_TIME__' -q ;then
+			local result=1
+		else
+			local result=0
+		fi
 	fi
+
+	# 输出结果
+	echo $result
 }
 
 rosefinch() {
@@ -34,4 +64,4 @@ rosefinch() {
 	fi
 }
 
-grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{" $0 && $1
+grep -q -P -e "^${1}[ |\t]?\(\)[ |\t]?\{" $0 && $1 $2 $3 $4 $5
