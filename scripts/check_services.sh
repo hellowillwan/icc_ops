@@ -13,6 +13,7 @@ LINUXS='
 10.0.0.11
 10.0.0.12
 10.0.0.13
+10.0.0.14
 10.0.0.20
 10.0.0.30
 10.0.0.31
@@ -251,17 +252,29 @@ check_containers() {
 
 php_terminating () {
 	displayheader 'Checking PHP Terminating'
-	func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*terminating' /var/log/php-fpm/error.log |wc -l"|sort
+	#func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*terminating' /var/log/php-fpm/error.log |wc -l"|sort
+	func 'app0[1-5]' call command run \
+		'for f in /tmp/icc_appserver_c0*/php-fpm/error.log;do
+			count=$(grep -e "$(date +%d-%b-%Y).*terminating" $f|wc -l);
+			printf "%-4s%-5s" ${f:19:3} ${count};
+		done' \
+	|sort
 }
 
 php_tooslow () {
 	displayheader 'Checking PHP Tooslow'
-	func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*executing too slow' /var/log/php-fpm/error.log |wc -l"|sort
+	#func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*executing too slow' /var/log/php-fpm/error.log |wc -l"|sort
+	func 'app0[1-5]' call command run \
+		'for f in /tmp/icc_appserver_c0*/php-fpm/error.log;do
+			count=$(grep -e "$(date +%d-%b-%Y).*executing too slow" $f|wc -l);
+			printf "%-4s%-5s" ${f:19:3} ${count};
+		done' \
+	|sort
 }
 
 php_segfault () {
 	displayheader 'Checking PHP Segfault'
-	func 'app0[1-4]' call command run "grep -P \"$(date '+%b %d').*php-fpm.*(segfault|general protection)\" /var/log/messages|wc -l"|sort
+	func 'app0[1-5]' call command run "grep -P \"$(date '+%b %d').*php-fpm.*(segfault|general protection)\" /var/log/messages|wc -l"|sort
 }
 
 full_dropping () {
