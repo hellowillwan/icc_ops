@@ -44,6 +44,8 @@ sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_REDIS_MASTERS[ |\t]\+\).*#\1'192.16
 #sed -i "/fastcgi_param  ICC_REDIS_SLAVES/c\fastcgi_param  ICC_REDIS_SLAVES  192.168.5.41:7004,192.168.5.41:7005,192.168.5.41:7006;" \
 sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_REDIS_SLAVES[ |\t]\+\).*#\1'192.168.5.41:7004,192.168.5.41:7005,192.168.5.41:7006';#" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
+sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_REDIS_SINGLE_\(MASTER\|SLAVE\)[ |\t]\+\).*#\1'192.168.5.48:6379';#" \
+	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
 #sed -i "/fastcgi_param  ICC_MONGOS_ICC/c\fastcgi_param  ICC_MONGOS_ICC  192.168.5.40:57017;" \
 sed -i "s#\(^[ |\t]*fastcgi_param[ |\t]\+ICC_MONGOS_ICC[ |\t]\+\).*#\1'192.168.5.40:57017';#" \
 	${CFG_WORKING_DIR}/app_nginx_conf/fcgi.conf
@@ -70,7 +72,7 @@ for vhostfile in $(find ${CFG_WORKING_DIR}/app_nginx_conf/vhost/ \
 		/usr/bin/logger "${SCRIPT_NAME} edit $vhostfile fail."
 	fi
 	# 设置 webroot 变量
-	sed -i "/\(^[ |\t]*\)root/i\\\tset \$webroot '/home/webs/dev';\n\tif (\$host ~* \".test.umaman.xyz\$\") { set \$webroot '/home/webs/test';}" $vhostfile
+	sed -i "/\(^[ |\t]*\)root/i\\\tset \$webroot '/home/webs/dev';\n\tif (\$host ~* \"\\\.test.umaman.xyz\$\") { set \$webroot '/home/webs/test';}" $vhostfile
 	# 编辑 root 路径
 	#sed -i 's/\(\/home\/webs\)/\1\/dev/' $vhostfile
 	sed -i 's|\(^[ |\t]*root[ |\t]*\)\/home\/webs|\1$webroot|' $vhostfile
