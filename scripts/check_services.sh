@@ -415,6 +415,8 @@ if [ -z "$1" ] ;then
 elif [ "$1" = 'web' -o "$1" = "nginx_php" ];then
 	nginx
 	php
+	pyweixin
+	swoolechat
 elif [ "$1" = 'sw' -o "$1" = "swoolechat" ];then
 	swoolechat
 elif [ "$1" = 'php' -o "$1" = "php_stat" ];then
