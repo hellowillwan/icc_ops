@@ -89,6 +89,16 @@ sync_individually() {
 		done
 	fi
 
+	# 微商项目同步触发
+	# 触发办公室内网 host48 去做一系列操作 
+	#
+	if [ "${subdir}" = 'weshop' ] ;then
+		echo $localkey weshop_sync_prod | /usr/bin/gearman -h 10.0.0.200 -p 4731 -f "CommonWorker_192.168.5.48" -b
+	fi
+
+
+
+
 	# 按webroot目录,分发项目代码
 	echo -e "分发 /home/webs/${subdir}/ 目录 :\n"
 	for ip in ${APP_IP_ARY[@]} ;do
