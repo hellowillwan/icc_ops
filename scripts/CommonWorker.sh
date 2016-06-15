@@ -344,9 +344,10 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	swoolechat_restart)
 		app="$p3"
 		port="$p4"
-		/usr/bin/func "${app}" call command run ". ~/.bashrc;swoolechat_restart ${port}" &
+		proj="$p5"
+		/usr/bin/func "${app}" call command run ". ~/.bashrc;swoolechat_restart ${port} ${proj}" &
 		echo 'should be restarted.'
-		logger CommonWorker $p1 $p2 $p3 $p4
+		logger CommonWorker $p1 $p2 $p3 $p4 $p5
 		;;
 	flush_alicdn)
 		source /usr/local/sbin/sc_cdn_functions.sh
@@ -354,6 +355,9 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	        ;;
 	sendemail)
 		sendemail "$p3" "$p4" "$p5" "$p6"
+	        ;;
+	test_timeout)
+		sleep 1200
 	        ;;
 	*)
 		echo "unknow command,return code:3"
