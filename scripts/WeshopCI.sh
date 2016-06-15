@@ -13,7 +13,7 @@ weshop_dir="${webroot}/weshop"				# 内网dev环境(dev.umaman.xyz域名)的 wes
 svncmd='/usr/bin/svn '
 svnoptions=' --config-dir /var/lib/.subversion --no-auth-cache --non-interactive --username young --password 123456 '
 rsynccmd="/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync -vzrpt --blocking-io --exclude='.svn' --exclude='.git' --exclude='*.log' --exclude='.buildpath' --exclude='.project' --exclude='.gitignore' --exclude='/cache/*' --exclude='/logs/*' "
-rsyncserver='211.152.60.42'
+rsyncserver='211.152.60.33'
 
 # 函数
 #
@@ -89,7 +89,7 @@ weshop_prod_to_all_projects() {
 		--exclude='svn' \
 		--exclude='diff' \
 		${src_dir} ${dst_dir}
-		# 211.152.60.42::${src_dir} ${dst_dir}	# 从线上正式环境拉取
+		# 211.152.60.33::${src_dir} ${dst_dir}	# 从线上正式环境拉取
 	done
 }
 
@@ -188,19 +188,18 @@ dev2demo() {
 		-vzrpt \
 		--blocking-io \
 		--exclude='svn' \
-		--exclude='diff' \
-		/home/webs/dev/${project}/public/html/m2/ 211.152.60.42::web/${project}demo/public/html/m2/
+		/home/webs/dev/${project}/public/html/m2 211.152.60.33::web/${project}demo/public/html/
 		# 分发到所有节点
 		localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
-		echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.42 -f CommonWorker_10.0.0.200
+		echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200
 	done
 }
 
 # 同步各个项目的编译打包后的文件( demo -> prod,sync_individually )
 demo2prod() {
 	for project in p r o j c t s;do
-		rsync pack 211.152.60.42:${webroot}/${project}demo/path/
-		# echo $localkey sync_demo_prod $item $dst_item |/usr/bin/gearman -h 211.152.60.42 -f CommonWorker_{$node_ips['host200']}
+		rsync pack 211.152.60.33:${webroot}/${project}demo/path/
+		# echo $localkey sync_demo_prod $item $dst_item |/usr/bin/gearman -h 211.152.60.33 -f CommonWorker_{$node_ips['host200']}
 		sync_individually ${project}
 	done
 }
@@ -219,8 +218,8 @@ weshop_sync_prod() {
 			weshop_prod_to_all_projects $project 2>&1 |tail -n 1
 		echo -en "打包 m2 并提交到项目 $project SVN\n\t"
 			pack_m2_and_commit $project 2>&1 #|tail -n 1
-		#echo -en "发布项目 $project 到 demo 环境\n\t"
-		#	dev2demo $project 2>&1 |tail -n 1
+		echo -en "发布项目 $project 到 demo 环境\n\t"
+			dev2demo $project 2>&1 |tail -n 1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	done
 }
