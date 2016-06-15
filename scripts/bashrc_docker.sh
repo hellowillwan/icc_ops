@@ -96,27 +96,48 @@ pyweixin_status() {
 }
 
 swoolechat_restart() {
-	port="$1"
-	if [ "$port" = '9503' ];then
-		local ctn='app05_icc_appserver_c09'
-		local project="160523fg0262"
-	elif [ "$port" = '9504' ];then
-		local ctn='app05_icc_appserver_c08'
-		local project="zhibodemo"
-	elif [ "$port" = '9505' ];then
-		local ctn='app05_icc_appserver_c07'
-		local project="zhibo"
-	else
-		:
+	local port="$1"
+	local project="$2"
+	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+	#if 
+	#if [ "$port" = '9503' ];then
+	#	local ctn='app05_icc_appserver_c09'
+	#	local project="160523fg0262"
+	#elif [ "$port" = '9504' ];then
+	#	local ctn='app05_icc_appserver_c08'
+	#	#local project="zhibodemo"
+	#	local project="160612fg0304demo"
+	#elif [ "$port" = '9505' ];then
+	#	local ctn='app05_icc_appserver_c07'
+	#	#local project="zhibo"
+	#	local project="160612fg0304"
+	#else
+	#	:
+	#fi
+	if [ -z "$1" -o -z "$2" -o -z "$ctn" ];then
+		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
+		return 1
 	fi
 	
 	docker restart ${ctn}
 	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/swoolchat/webim_server.php &" &
-	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoolchat/webim_server.php'"
+	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoolchat/webim_server.php'|grep -v -e grep"
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm restart' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm status' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx' # &>/dev/null
 	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx -s reload' # &>/dev/null
+}
+
+swoolechat_status() {
+	local port="$1"
+	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+	if [ -z "$1" -o -z "$ctn" ];then
+		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
+		return 1
+	fi
+	#docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" | awk '{print $5}'|tr -d '\n'
+	docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
+	
 }
 
 # Source global definitions
