@@ -130,13 +130,15 @@ swoolechat_restart() {
 
 swoolechat_status() {
 	local port="$1"
-	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+	local ctn=$(docker ps -a|grep "${port}->" 2>/dev/null | awk '{print $NF}')
 	if [ -z "$1" -o -z "$ctn" ];then
 		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
 		return 1
 	fi
 	#docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
-	docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" | awk '{print $5,$9}'|tr -d '\n'
+	docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" \
+	| awk '{gsub('/.home.webs.\|.swoo.*$/',"",$9);print $5,$9}' \
+	| tr -d '\n'
 	
 }
 
