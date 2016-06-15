@@ -92,6 +92,7 @@ PY_WX_SRV='
 10.0.0.14:8000
 '
 SWCHAT_SRV='
+10.0.0.10:9503
 10.0.0.12:9503
 10.0.0.14:9503
 10.0.0.14:9504
@@ -115,6 +116,9 @@ REDIS='
 172.18.1.1:7002
 172.18.1.2:7002
 172.18.1.200:7002
+
+10.0.0.31:6379
+10.0.0.32:6379
 '
 
 MONGODBS='
@@ -231,6 +235,10 @@ swoolechat() {
 	for ip_port in ${SWCHAT_SRV} ;do
 		echo -en "${ip_port}\t"
 		curl -s -o /dev/null -D - http://${ip_port}|head -n 1
+		local ip=${ip_port%:*}
+		local port=${ip_port#*:}
+		local hostname=$(grep -P "^[ |\t]*${ip}" /etc/hosts|awk '{print $2}')
+		func "${hostname}" call command run ". /root/.bashrc ;swoolechat_status ${port}"
 		echo
 	done
 }
