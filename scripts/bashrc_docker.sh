@@ -135,7 +135,7 @@ swoolechat_status() {
 		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
 		return 1
 	fi
-	docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
+	#docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
 	docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" | awk '{print $5,$9}'|tr -d '\n'
 	
 }
