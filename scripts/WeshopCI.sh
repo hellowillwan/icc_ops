@@ -74,22 +74,22 @@ weshop_prod_to_all_projects() {
 
 	for project_code in ${projects} ;do
 		if test -d /home/webs/dev/${project_code}/public/html/m2 ;then 
-			#local src_dir='web/weshop/public/html/m2/'
-			local src_dir='/home/webs/dev/weshop/public/html/m2/'
+			local src_dir='web/weshop/public/html/m2/'
+			#local src_dir='/home/webs/dev/weshop/public/html/m2/'
 			local dst_dir="/home/webs/dev/${project_code}/public/html/m2/"
 		else
-			#local src_dir='web/weshop/public/html/m2'
-			local src_dir='/home/webs/dev/weshop/public/html/m2'
+			local src_dir='web/weshop/public/html/m2'
+			#local src_dir='/home/webs/dev/weshop/public/html/m2'
 			local dst_dir="/home/webs/dev/${project_code}/public/html/"
 		fi
-		# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
+		/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 		/usr/bin/rsync \
 		-vzrpt \
 		--blocking-io \
 		--exclude='svn' \
 		--exclude='diff' \
-		${src_dir} ${dst_dir}
-		# 211.152.60.33::${src_dir} ${dst_dir}	# 从线上正式环境拉取
+		211.152.60.33::${src_dir} ${dst_dir}	# 从线上正式环境拉取
+		#${src_dir} ${dst_dir}
 	done
 }
 
@@ -120,11 +120,11 @@ pack_m2_and_commit() {
 		
 		# 删除项目 m2 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
 		rm ${workingdir}/node_modules -rf
-		${svncmd} ${svnoptions} --force add ${workingdir}/
+		${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1
 		# ${svncmd} ${svnoptions} --force add ${workingdir}/dist/images
 		# ${svncmd} ${svnoptions} --force add ${workingdir}/dist/js/*.js
 		# ${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/dist
-		${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/
+		${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/ 2>&1
 	done
 }
 
@@ -215,11 +215,21 @@ weshop_sync_prod() {
 	for project in ${PROJECTS} ;do
 		echo "$(date) 项目: $project"
 		echo -en "从线上 weshop 正式环境拉取 m2 目录\n\t"
-			weshop_prod_to_all_projects $project 2>&1 |tail -n 1
+			weshop_prod_to_all_projects $project 2>&1 #|tail -n 1
 		echo -en "打包 m2 并提交到项目 $project SVN\n\t"
 			pack_m2_and_commit $project 2>&1 #|tail -n 1
 		echo -en "发布项目 $project 到 demo 环境\n\t"
-			dev2demo $project 2>&1 |tail -n 1
+			dev2demo $project 2>&1 #|tail -n 1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	done
 }
+
+
+# 发布到demo
+# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync  -vzrptn --blocking-io --exclude='svn' /home/webs/dev/140821fg0374/public/html/m2/ 211.152.60.33::web/140821fg0374demo/public/html/m2/
+
+# 拉取m2
+# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync -vzrptn --blocking-io --exclude='svn' --exclude='diff' 211.152.60.33::web/weshop/public/html/m2/ /home/webs/dev/140821fg0374/public/html/m2/
+
+# 手工执行
+# . /usr/local/sbin/WeshopCI.sh ; pack_m2_and_commit 140821fg0374
