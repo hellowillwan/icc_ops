@@ -5,6 +5,7 @@
 alias rm='rm -i'
 alias cp='cp -i'
 alias mv='mv -i'
+alias psp="ps -e -o'pcpu,pmem,rsz,pid,comm,args'|sort -k1,2nr|head -n 50"
 
 goto () {
 	containers="$(docker ps|awk '{print $NF}'|grep -v -e '^NAMES$')"
