@@ -216,7 +216,8 @@ sync_demo_prod ()
 		return 1
 	fi
 
-	rsync	-vrogptlc --delete \
+	#rsync	-vrogptlc --delete \
+	rsync	-vrogptl --delete \
 		--blocking-io \
 		--exclude='.svn' \
 		--exclude='*.log' \
@@ -346,7 +347,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		port="$p4"
 		proj="$p5"
 		/usr/bin/func "${app}" call command run ". ~/.bashrc;swoolechat_restart ${port} ${proj}" &
-		echo 'should be restarted.'
+		echo 'should have been finished restarting.'
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5
 		;;
 	flush_alicdn)
@@ -358,6 +359,8 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	        ;;
 	test_timeout)
 		sleep 1200
+		ret=$?
+		echo "ret:${ret}"
 	        ;;
 	*)
 		echo "unknow command,return code:3"
