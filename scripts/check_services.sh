@@ -172,12 +172,12 @@ displayheader() {
 
 #begin check
 
-funcping () {
+funcping() {
 	#func ping check
 	/usr/bin/func '*' ping
 }
 
-load () {
+load() {
 	#check load
 	displayheader 'Checking Load'
 	for ip in ${LINUXS} ;do
@@ -190,7 +190,7 @@ load () {
 	done
 }
 
-nginx () {
+nginx() {
 	#check nginx
 	displayheader 'Checking Nginx'
 	for ip_port in ${NGINXS} ;do
@@ -200,8 +200,17 @@ nginx () {
 		echo
 	done
 }
+proxy_nolive_upstreams() {
+	#check proxy no live upstreams
+	displayheader 'Checking Proxy no live upsteams'
+	for pxy in proxy01 proxy02 ;do
+		func "${pxy}" call command run "grep 'no live upstreams' /usr/local/tengine/logs/error.log \
+			| grep -o -i -e 'upstream:.*' \
+			| awk -F'/' '{print $3}' | sort | uniq -c"
+	done
+}
 
-httpd () {
+httpd() {
 	#check httpd
 	displayheader 'Checking Httpd'
 	for ip in ${HTTPD} ;do
@@ -211,7 +220,7 @@ httpd () {
 	done
 }
 
-php () {
+php() {
 	#check php-fpm
 	displayheader 'Checking PHP-FPM'
 	for ip_port in ${PHPS} ;do
@@ -258,7 +267,7 @@ check_containers() {
 	done
 }
 
-php_terminating () {
+php_terminating() {
 	displayheader 'Checking PHP Terminating'
 	#func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*terminating' /var/log/php-fpm/error.log |wc -l"|sort
 	func 'app0[1-5]' call command run \
@@ -269,7 +278,7 @@ php_terminating () {
 	|sort
 }
 
-php_tooslow () {
+php_tooslow() {
 	displayheader 'Checking PHP Tooslow'
 	#func 'app0[1-4]' call command run "grep -e '$(date +%d-%b-%Y).*executing too slow' /var/log/php-fpm/error.log |wc -l"|sort
 	func 'app0[1-5]' call command run \
@@ -280,16 +289,16 @@ php_tooslow () {
 	|sort
 }
 
-php_segfault () {
+php_segfault() {
 	displayheader 'Checking PHP Segfault'
 	func 'app0[1-5]' call command run "grep -P \"$(date '+%b %d').*php-fpm.*(segfault|general protection)\" /var/log/messages|wc -l"|sort
 }
 
-full_dropping () {
+full_dropping() {
 	func '*' call command run "dmesg|grep ' table full, dropping packet'"
 }
 	
-memcached () {
+memcached() {
 	#check memcached
 	displayheader 'Checking Memcached'
 	for ip_port in ${MEMCACHEDS} ;do
@@ -314,14 +323,14 @@ redis() {
 	done
 }
 	
-gearmand () {
+gearmand() {
 	#check gearmand
 	displayheader 'Checking Gearmand'
 	#/usr/bin/gearadmin -h 10.0.0.200 -p 4730 --status|sort
 	/usr/bin/gearadmin -h 10.0.0.200 -p 4730 --status|sort|grep -v -e '^\.$'|awk '{printf "%-24s %-2s %-2s %-2s %-2s\n",$1,$2,$3,$4,$5}'
 }
 	
-api_urls () {
+api_urls() {
 	#check api_urls
 	displayheader 'Checking Thirdpart API URLs'
 	for url in ${API_URLS} ;do
@@ -331,7 +340,7 @@ api_urls () {
 	done
 }
 
-mongodb () {
+mongodb() {
 	#check replica-set status
 	displayheader 'Checking Replica-set status'
 	#for port in 40001 60001 60002;do
@@ -438,6 +447,7 @@ elif [ "$1" = 'web' -o "$1" = "nginx_php" ];then
 	php
 	pyweixin
 	swoolechat
+	proxy_nolive_upstreams
 elif [ "$1" = 'sw' -o "$1" = "swoolechat" ];then
 	swoolechat
 elif [ "$1" = 'php' -o "$1" = "php_stat" ];then
