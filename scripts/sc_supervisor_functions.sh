@@ -186,11 +186,17 @@ supervisor_control() {
 			# 查看日志
 			# supervisorctl tail命令遇到日志文件编码有问题时会报RPC错误,如果有必要可以从配置文件里获取到日志文件路径后直接tail
 			#
-			#proc_name="$2"
-			#log_file=$(grep -A 20 "program:${proc_name}" ${SUPERVISORCFG} |grep -P -e '^[ |\t]*stdout_logfile='|head -n 1|awk -F'=' '{print $2}')
-			#tail -n 1600 ${log_file}
+			proc_name="$2"
+			log_file=$(grep -A 20 "program:${proc_name}" ${SUPERVISORCFG} |grep -P -e '^[ |\t]*stdout_logfile='|head -n 1|awk -F'=' '{print $2}')
+			tail -c 32768 ${log_file}
+			if [ "$?" -eq 0 ];then
+				echo "命令执行成功."
+			else
+				echo "命令执行失败."
+			fi
+			return
 			#
-			proc_name="-32768 ${2}:${2}0"
+			#proc_name="-32768 ${2}:${2}0"
 		elif [ $sp_cmd = 'maillog' ];then
 			#Email日志
 			proc_name="${2}"
