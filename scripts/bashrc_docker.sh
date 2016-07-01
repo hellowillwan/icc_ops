@@ -71,6 +71,7 @@ php_restart() {
 		echo "${ctn} stop nginx : "
 		docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx -s stop &>/dev/null; /usr/local/tengine/sbin/nginx -s stop &>/dev/null'
 		echo "${ctn} restart php-fpm : "
+		docker exec -i ${ctn} sed -i 's|\(^[ |\t]*_use_systemctl=1$\)|#\1|' /etc/init.d/functions
 		docker exec -i ${ctn} /etc/init.d/php-fpm restart
 		echo "${ctn} start nginx : "
 		docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx'
@@ -123,6 +124,7 @@ swoolechat_restart() {
 	docker restart ${ctn}
 	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/swoolchat/webim_server.php &" &
 	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoolchat/webim_server.php'|grep -v -e grep"
+	docker exec -i ${ctn} sed -i 's|\(^[ |\t]*_use_systemctl=1$\)|#\1|' /etc/init.d/functions
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm restart' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm status' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx' # &>/dev/null
