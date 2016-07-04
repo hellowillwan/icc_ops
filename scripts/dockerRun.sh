@@ -1,21 +1,36 @@
 #!/bin/sh
 
 
-newContainer_for_appserver_php56() {
+newContainer_for_appserver_php7() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=0,2 \
-	--memory=5120M \
 	--name=app02_icc_appserver_c01 \
-	-h app02_icc_appserver_c01 \
+	-h appserver-c01 \
 	-v /home/webs:/home/webs \
 	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
 	-v /etc/app_php_conf/php-7.0:/etc/app_php_conf \
 	-v /tmp/icc_appserver_c01:/tmp \
 	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
-	-p 8081:80 \
-	icc_appserver_tengine-2.1.1_php-7.0.4:latest \
+	-p 60081:80 \
+	icc_appserver_tengine-2_php-7:latest \
+	/bin/bash
+}
+
+newContainer_for_appserver_php56() {
+	docker run \
+	-d -t \
+	--restart=always \
+	--name=app02_icc_appserver_c02 \
+	-h appserver-c02 \
+	-v /home/webs:/home/webs \
+	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
+	-v /etc/app_php_conf/php-5.6:/etc/app_php_conf \
+	-v /tmp/icc_appserver_c02:/tmp \
+	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
+	-p 60082:80 \
+	-p 9503:9503 \
+	icc_appserver_tengine-2_php-5.6:latest \
 	/bin/bash
 }
 
@@ -23,53 +38,15 @@ newContainer_for_appserver_php54() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=1,3 \
-	--memory=5120M \
-	--name=app02_icc_appserver_c02 \
-	-h app02_icc_appserver_c02 \
-	-v /home/webs:/home/webs \
-	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
-	-v /etc/app_php_conf/php-5.4:/etc/app_php_conf \
-	-v /tmp/icc_appserver_c02:/tmp \
-	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
-	-p 8082:80 \
-	icc_appserver_tengine-2.1.0_php-5.4.45:latest \
-	/bin/bash
-}
-
-newContainer_for_appserver_php54_2() {
-	docker run \
-	-d -t \
-	--restart=always \
-	--cpuset-cpus=0,2 \
-	--memory=5120M \
 	--name=app02_icc_appserver_c03 \
-	-h app02_icc_appserver_c03 \
+	-h appserver-c03 \
 	-v /home/webs:/home/webs \
 	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
 	-v /etc/app_php_conf/php-5.4:/etc/app_php_conf \
 	-v /tmp/icc_appserver_c03:/tmp \
 	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
-	-p 8083:80 \
+	-p 60083:80 \
 	icc_appserver_tengine-2.1.0_php-5.4.45:latest \
-	/bin/bash
-}
-
-newContainer_for_appserver_php54_3() {
-	docker run \
-	-d -t \
-	--restart=always \
-	--cpuset-cpus=0,2 \
-	--memory=5120M \
-	--name=app01_icc_appserver_c04 \
-	-h app01_icc_appserver_c04 \
-	-v /home/webs:/home/webs \
-	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
-	-v /etc/app_php_conf/php-5.4:/etc/app_php_conf \
-	-v /tmp/icc_appserver_c04:/tmp \
-	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
-	-p 8084:80 \
-	icc_appserver_tengine-2.1.0_php-5.4.45:php-mongo-1.6.11 \
 	/bin/bash
 }
 
@@ -77,8 +54,6 @@ newContainer_for_mongod_40101() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=1,3 \
-	--memory=1024M \
 	--name=mongod_40101 \
 	-h mongod_40101 \
 	-v /usr/local/mongodb-linux-x86_64-2.4.5:/usr/local/mongodb-linux-x86_64-2.4.5 \
@@ -92,8 +67,6 @@ newContainer_for_mongod_40102() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=0,2 \
-	--memory=1024M \
 	--name=mongod_40102 \
 	-h mongod_40102 \
 	-v /usr/local/mongodb-linux-x86_64-2.4.5:/usr/local/mongodb-linux-x86_64-2.4.5 \
@@ -107,8 +80,6 @@ newContainer_for_mongod_60101() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=1,2 \
-	--memory=2048M \
 	--name=mongod_60101 \
 	-h mongod_60101 \
 	-v /usr/local/mongodb-linux-x86_64-rhel62-3.0.4:/usr/local/mongodb-linux-x86_64-rhel62-3.0.4 \
@@ -122,8 +93,6 @@ newContainer_for_mongod_60102() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=1,2 \
-	--memory=2048M \
 	--name=mongod_60102 \
 	-h mongod_60102 \
 	-v /usr/local/mongodb-linux-x86_64-rhel62-3.0.4:/usr/local/mongodb-linux-x86_64-rhel62-3.0.4 \
@@ -137,8 +106,6 @@ newContainer_for_mongod_60201() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=0,3 \
-	--memory=4096M \
 	--name=mongod_60201 \
 	-h mongod_60201 \
 	-v /usr/local/mongodb-linux-x86_64-rhel62-3.0.4:/usr/local/mongodb-linux-x86_64-rhel62-3.0.4 \
@@ -152,8 +119,6 @@ newContainer_for_mongod_60202() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=0,3 \
-	--memory=2048M \
 	--name=mongod_60202 \
 	-h mongod_60202 \
 	-v /usr/local/mongodb-linux-x86_64-rhel62-3.0.4:/usr/local/mongodb-linux-x86_64-rhel62-3.0.4 \
@@ -168,8 +133,6 @@ newContainer_for_loadrunner() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=3 \
-	--memory=1024M \
 	--name=loadrunner01 \
 	-h app02_loadrunner01 \
 	-v /tmp/loadrunner01:/tmp \
@@ -184,13 +147,11 @@ newContainer_for_py_weixin_service() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=0-3 \
-	--memory=2048M \
 	--name=${container_name} \
-	-h ${container_name} \
+	-h ${container_name//_/-} \
 	-v /tmp:/tmp \
 	-v /home/webs:/home/webs \
-	-p 8000:8000 \
+	-p 60000:8000 \
 	${image_name}:latest \
 	/usr/bin/python /home/webs/icc/scripts/weixin/service.py --logging=None --log=/tmp/py_weixin_service.log
 }
@@ -206,8 +167,6 @@ newContainer_for_testing() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--cpuset-cpus=3 \
-	--memory=1024M \
 	--name=${container_name} \
 	-h ${container_name} \
 	-v /tmp:/tmp \
