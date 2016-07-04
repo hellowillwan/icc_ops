@@ -74,20 +74,23 @@ weshop_prod_to_all_projects() {
 
 	for project_code in ${projects} ;do
 		if test -d /home/webs/dev/${project_code}/public/html/m2 ;then 
+			# 如果该项目 存在 m2 目录,则排除 diff 目录进行同步
 			local src_dir='web/weshop/public/html/m2/'
 			#local src_dir='/home/webs/dev/weshop/public/html/m2/'
 			local dst_dir="/home/webs/dev/${project_code}/public/html/m2/"
+			is_exclude_diff=" --exclude='diff' "
 		else
+			# 如果该项目 不存在 m2 目录,则直接进行同步
 			local src_dir='web/weshop/public/html/m2'
 			#local src_dir='/home/webs/dev/weshop/public/html/m2'
 			local dst_dir="/home/webs/dev/${project_code}/public/html/"
+			is_exclude_diff=' '
 		fi
 		/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 		/usr/bin/rsync \
 		-vzrpt \
 		--blocking-io \
-		--exclude='svn' \
-		--exclude='diff' \
+		--exclude='svn' ${is_exclude_diff} \
 		211.152.60.33::${src_dir} ${dst_dir}	# 从线上正式环境拉取
 		#${src_dir} ${dst_dir}
 	done
