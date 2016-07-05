@@ -64,36 +64,65 @@ sync_individually() {
 	#echo -e "${hostname}\t${subdir}"
 	#return
 
-	# 对开启微商城的项目做软链接
-	# /home/webs/weshop/application/modules/shop -> /home/webs/haoyadatestdemo/application/modules/shop
+	# 对开启 微商城 | 直播 的项目,在分发时做软链接
+	# 举例: /home/webs/weshop/application/modules/shop -> /home/webs/haoyadatestdemo/application/modules/shop
 	#
-	local weshop_enabled_hosts='/var/lib/weshop_enabled_hosts'	# 开启微商功能的项目编号列表,一行一个
-	local weshop_filelist='/var/lib/weshop_filelist'		# 需要更新的微商项目文件/目录,一行一个
-	if grep -q -e "^${subdir}$" ${weshop_enabled_hosts} ;then
+	for keyword in weshop zhibo ;do
 		local webroot='/home/webs'				# WebRoot目录
-		echo "${subdir}" |grep -q -e 'demo$' && local weshop_dir="${webroot}/weshopdemo"|| local weshop_dir="${webroot}/weshop"	# weshop 项目目录
-		local project_dir="${webroot}/${subdir}"
-		for item in $(cat ${weshop_filelist});do
-			local src_item="${weshop_dir}${item}"
-			local dst_item="${project_dir}${item}"
-			# 无条件删除[软链接|文件|文件夹|无] 并 确保上级目录存在
-			rm ${dst_item} -rf &>/dev/null; mkdir -p ${dst_item%/*} &>/dev/null
-			# 创建软链接
-			if   [ -f ${src_item} ];then
-				ln -s ${src_item} ${dst_item}
-			elif [ -d ${src_item} ];then
-				ln -s ${src_item} ${dst_item%/*}/
-			else
-				:
-			fi
-		done
-	fi
+		local hostslist="/var/lib/${keyword}_enabled_hosts"	# 项目编号列表,一行一个
+		local filelist="/var/lib/${keyword}_filelist"		# 文件/目录,一行一个
+		if [ $keyword = 'weshop' ] ;then			# 源项目编号
+			local src_project=weshop
+		elif [ $keyword = 'zhibo' ] ;then
+			local src_project=160523fg0262
+		fi
+		if grep -q -e "^${subdir}$" ${hostslist} ;then
+			# 源项目目录
+			local src_project_dir="${webroot}/${src_project}"
+			echo "${subdir}" | grep -q -e 'demo$' &&  local src_project_dir="${webroot}/${src_project}demo"
+			# 目标项目目录
+			local project_dir="${webroot}/${subdir}"
+			# 建立软连接
+			for item in $(cat ${filelist});do
+				local src_item="${src_project_dir}${item}"
+				local dst_item="${project_dir}${item}"
+				# 无条件删除[软链接|文件|文件夹|无] 并 确保上级目录存在
+				rm ${dst_item} -rf &>/dev/null; mkdir -p ${dst_item%/*} &>/dev/null
+				# 创建软链接
+				if   [ -f ${src_item} ];then
+					ln -s ${src_item} ${dst_item}
+				elif [ -d ${src_item} ];then
+					ln -s ${src_item} ${dst_item%/*}/
+				fi
+			done
+			#break	# 一个项目要么是直播要么微商?可能不一定
+		fi
+	done
 
-	# 微商项目同步触发
-	# 触发办公室内网 host48 去做一系列操作 
+	# 微商城 | 直播 项目同步-分发 触发操作
 	#
 	if [ "${subdir}" = 'weshop' ] ;then
+		# 触发相关项目分发
+		for proj in $(cat /var/lib/weshop_enabled_hosts |grep -v -e 'demo$');do
+			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
+		done
+		# 触发办公室内网 host48 去做一系列操作
 		echo $localkey weshop_sync_prod | /usr/bin/gearman -h 10.0.0.200 -p 4731 -f "CommonWorker_192.168.5.48" -b
+	elif [ "${subdir}" = 'weshopdemo' ] ;then
+		# 触发相关项目分发
+		for proj in $(cat /var/lib/weshop_enabled_hosts|grep -e 'demo$');do
+			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
+		done
+	elif [ "${subdir}" = '160523fg0262' ] ;then
+		# 触发相关项目分发
+		for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -v -e 'demo$');do
+			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
+		done
+	elif [ "${subdir}" = '160523fg0262demo' ] ;then
+		# 触发相关项目分发
+		for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -e 'demo$');do
+			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
+		done
 	fi
 
 
