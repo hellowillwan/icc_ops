@@ -74,7 +74,7 @@ sync_profile_to_containers() {
 	func 'app*' call command run \
 	". ~/.bashrc; \
 	docker_run_a_cmd_on_all_container \
-	'[ -r /var/log/xdebug_log_dir/.hosts -a -s /var/log/xdebug_log_dir/.hosts ] && cat /var/log/xdebug_log_dir/.hosts > /etc/hosts;echo \$?' \
+	'[ -r /var/log/xdebug_log_dir/.profile -a -s /var/log/xdebug_log_dir/.profile ] && cat /var/log/xdebug_log_dir/.profile > /etc/profile;echo \$?' \
 	| grep -v -e ':' -e '^\$' | sort | uniq -c"
 	check_containers_profile
 }
