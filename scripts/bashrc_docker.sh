@@ -100,6 +100,7 @@ pyweixin_status() {
 swoolechat_restart() {
 	local port="$1"
 	local project="$2"
+	local sw_param=" -a /home/webs/$project/swoolchat"
 	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
 	#if 
 	#if [ "$port" = '9503' ];then
@@ -122,7 +123,7 @@ swoolechat_restart() {
 	fi
 	
 	docker restart ${ctn}
-	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/swoolchat/webim_server.php &" &
+	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/swoolchat/webim_server.php $sw_param &" &
 	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoolchat/webim_server.php'|grep -v -e grep"
 	docker exec -i ${ctn} sed -i 's|\(^[ |\t]*_use_systemctl=1$\)|#\1|' /etc/init.d/functions
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm restart' #&>/dev/null
