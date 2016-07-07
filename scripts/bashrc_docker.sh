@@ -140,9 +140,11 @@ swoolechat_status() {
 		return 1
 	fi
 	#docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
-	docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" \
-	| awk '{gsub('/.home.webs.\|.swoo.*$/',"",$9);print $5,$9}' \
-	| tr -d '\n'
+	local instance_stime_project=$(docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" \
+	| awk '{gsub('/.home.webs.\|.swoo.*$/',"",$9);print $5,$9}')
+	local connections=$(docker exec ${ctn} ss -nt|grep 9503|wc -l)
+	local process_number=$(docker exec ${ctn} ps -ef|grep -e 'swoolchat/webim_server.php'|wc -l)
+	echo -n $instance_stime_project process_number:$process_number connections:$connections
 	
 }
 
