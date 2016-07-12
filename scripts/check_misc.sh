@@ -258,9 +258,14 @@ mongo_index() {
 }
 
 out_conn() {
-	source /usr/local/sbin/ProcNetTCP_Parser.sh
-	count=$(core_netstat 2>/dev/null | awk '$3 !~ /10.0.0/ && $3 !~ /172.18.1/ && $3 !~ /127.0.0.1/ && $3 !~ /0.0.0.0/' 2>/dev/null|wc -l)
-	echo ${count:-0}
+	# for physical machine
+	#source /usr/local/sbin/ProcNetTCP_Parser.sh
+	#count=$(core_netstat 2>/dev/null | awk '$3 !~ /10.0.0/ && $3 !~ /172.18.1/ && $3 !~ /127.0.0.1/ && $3 !~ /0.0.0.0/' 2>/dev/null|wc -l)
+	#echo ${count:-0}
+	# for docker containers
+	local localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
+	local ip=$(/sbin/ip a l dev em1 |grep 'inet '|cut -d '/' -f1|cut -d' ' -f6|head -n 1)
+	echo $localkey containers_outconnects |gearman -h 10.0.0.200 -f CommonWorker_${ip}
 }
 
 nic_link() {
