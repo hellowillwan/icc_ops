@@ -92,7 +92,7 @@ sync_bashrc_to_apps() {
 	check_apps_bashrc
 }
 
-check_all_cantainers() {
+check_all_containers() {
 	for url in http://iwebsite2.umaman.com/invoke/index/mongodb http://iwebsite2.umaman.com/invoke/index/redis http://iwebsite2.umaman.com/invoke/index/memcache http://scrm.umaman.com/admin/index/phpinfo http://icc.umaman.com/login ;do
 		echo $url
 		for i in {1..100};do curl -sx 10.0.0.1:80 $url -o /dev/null -D -|grep -e X-router-s -e '^HTT';done|sort |uniq -c
