@@ -303,6 +303,7 @@ redis() {
 		echo info | ${REDIS_CLI} -c -h ${ip_port%%:*} -p ${ip_port##*:} | grep \
 		-e used_memory_human \
 		-e used_memory_peak_human \
+		-e rdb_last_save_time \
 		-e 'db0:keys' \
 		-e master_host \
 		-e master_port \
