@@ -107,3 +107,22 @@ check_containers_outgoingconnections() {
 	| tr '\n' ' '"
 }
 
+sync_zabbix_cfg_bins() {
+	# 分发配置文件和检查脚本
+	for f in \
+		/usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf \
+		/usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf.d/hostname.conf \
+		/usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf.d/userparams.conf \
+		/usr/local/sbin/check_hardware.sh \
+		/usr/local/sbin/check_http.sh \
+		/usr/local/sbin/check_misc.sh \
+		/usr/local/sbin/es_query_status.sh \
+		/usr/local/sbin/check_url.sh
+	do
+		func "proxy*;app*;mongo*" copyfile --file=${f} --remotepath=${f}
+	done
+	# 修改差异部分并重启服务
+	func 'proxy*;app*;mongo*' call command run \
+	"sed -i -e \"/^Hostname/c\Hostname=\$(hostname)\" /usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf.d/hostname.conf
+	/etc/init.d/zabbix_agentd restart"
+}
