@@ -321,7 +321,14 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 $p8 $p9 return code:$ret
 		exit $ret
 	        ;;
-	cronjob_list|cronjob_add|cronjob_del|cronjob_disable|cronjob_enable|cronjob_runonce|cronjob_taillog|cronjob_maillog)
+	cronjob_list)
+		source /usr/local/sbin/sc_cronjob_functions.sh
+		$cmd $p3 $p4 $p5 $p6 $p7 $p8|sort -t '|' -k3
+		ret=$?
+		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 return code:$ret
+		exit $ret
+	        ;;
+	cronjob_add|cronjob_del|cronjob_disable|cronjob_enable|cronjob_runonce|cronjob_taillog|cronjob_maillog)
 		source /usr/local/sbin/sc_cronjob_functions.sh
 		$cmd $p3 $p4 $p5 $p6 $p7 $p8
 		ret=$?
