@@ -87,14 +87,16 @@ sync_individually() {
 				local src_item="${src_project_dir}${item}"
 				local dst_item="${project_dir}${item}"
 				# 无条件删除[软链接|文件|文件夹|无] 并 确保上级目录存在
-				rm ${dst_item} -rf &>/dev/null; mkdir -p ${dst_item%/*} &>/dev/null
+				#rm ${dst_item} -rf &>/dev/null; mkdir -p ${dst_item%/*} &>/dev/null
+				test -h ${dst_item} && rm ${dst_item} -rf ; mkdir -p ${dst_item%/*} &>/dev/null
 				# 创建软链接
+				#echo "${src_item} ---> ${dst_item}"
 				if   [ -f ${src_item} ];then
 					#ln -s ${src_item} ${dst_item}
-					rsync -avc ${src_item} ${dst_item} || rsync -avc ${src_item} ${dst_item}
+					rsync -ac ${src_item} ${dst_item} || rsync -ac ${src_item} ${dst_item}
 				elif [ -d ${src_item} ];then
 					#ln -s ${src_item} ${dst_item%/*}/
-					rsync -avc --delete ${src_item} ${dst_item%/*}/ || rsync -avc --delete ${src_item} ${dst_item%/*}/
+					rsync -ac --delete ${src_item} ${dst_item%/*}/ || rsync -ac --delete ${src_item} ${dst_item%/*}/
 				fi
 			done
 			#break	# 一个项目要么是直播要么微商?可能不一定
