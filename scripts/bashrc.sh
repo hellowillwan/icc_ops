@@ -113,6 +113,8 @@ sync_zabbix_cfg_bins() {
 		/usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf \
 		/usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf.d/hostname.conf \
 		/usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf.d/userparams.conf \
+		/usr/local/sbin/redis-cli \
+		/usr/local/sbin/zabbix_low_discovery.sh \
 		/usr/local/sbin/check_hardware.sh \
 		/usr/local/sbin/check_http.sh \
 		/usr/local/sbin/check_misc.sh \
@@ -125,4 +127,22 @@ sync_zabbix_cfg_bins() {
 	func 'proxy*;app*;mongo*' call command run \
 	"sed -i -e \"/^Hostname/c\Hostname=\$(hostname)\" /usr/local/zabbix-2.2.3/etc/zabbix_agentd.conf.d/hostname.conf
 	/etc/init.d/zabbix_agentd restart"
+}
+
+check_weshopfiles() {
+        if [ -z "$1" ];then
+                local PROJECTS=$(cat /var/lib/weshop_enabled_hosts)
+        else
+                local PROJECTS="$1"
+        fi
+
+        for p in ${PROJECTS} ;do
+		echo $p|grep -q -e 'demo$' && local weshopdir=weshopdemo || local weshopdir=weshop
+		echo $p
+		for f in $(cat /var/lib/weshop_filelist);do
+			diff -r         /home/webs/${weshopdir}/$f /home/webs/$p/$f &>/dev/null \
+			|| echo diff -r /home/webs/${weshopdir}/$f /home/webs/$p/$f
+		done
+		echo
+	done
 }
