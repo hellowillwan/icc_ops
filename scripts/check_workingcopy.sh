@@ -33,8 +33,20 @@ diff -r /home/proxy_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/proxy_nginx_conf/ 
 diff -r /home/app_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/app_nginx_conf/ 2>&1|grep -v -e '\.svn$' -e '^Only in /home/wanlong/PKG/ops/ngx_cfg'
 diff -r /home/app_php_conf/ /home/wanlong/PKG/ops/app_php_conf/ 2>&1|grep -v -e '\.svn$' -e '^Only in /home/wanlong/PKG/ops/app_php_conf'
 
+#
+# 检查 zabbix 配置文件
+#
+echo -e "\n检查 zabbix 配置文件"
+cd /home/wanlong/PKG/ops/zabbix_cfg/
+svn up
+svn st
+echo
+
+diff -r /usr/local/zabbix-2.2.3/etc/ /home/wanlong/PKG/ops/zabbix_cfg/
+
 echo "同步命令"
 echo "rsync -rptcvz /usr/local/share/commonworker/ /home/wanlong/PKG/ops/ngx_cfg/cfg_template/"
 echo "rsync -rptcvz /home/proxy_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/proxy_nginx_conf/"
 echo "rsync -rptcvz /home/app_nginx_conf/ /home/wanlong/PKG/ops/ngx_cfg/app_nginx_conf/"
 echo "rsync -rptcvz /home/app_php_conf/ /home/wanlong/PKG/ops/app_php_conf/"
+echo "rsync -rptcvz /usr/local/zabbix-2.2.3/etc/ /home/wanlong/PKG/ops/zabbix_cfg/"
