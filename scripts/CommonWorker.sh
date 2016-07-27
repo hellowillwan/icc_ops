@@ -295,6 +295,10 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		source /usr/local/sbin/sc_supervisor_functions.sh
 		$cmd $p3 $p4 $p5
 		;;
+	edit_file)
+		source /usr/local/sbin/sc_editfile_functions.sh
+		$cmd $p3 $p4 $p5
+		;;
 	ensure_ftp_account)
 		source /usr/local/sbin/sc_vsftpd_functions.sh
 		ensure_ftp_account $p3 $p4 $p5
