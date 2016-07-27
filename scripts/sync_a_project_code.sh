@@ -90,9 +90,11 @@ sync_individually() {
 				rm ${dst_item} -rf &>/dev/null; mkdir -p ${dst_item%/*} &>/dev/null
 				# 创建软链接
 				if   [ -f ${src_item} ];then
-					ln -s ${src_item} ${dst_item}
+					#ln -s ${src_item} ${dst_item}
+					rsync -avc ${src_item} ${dst_item} || rsync -avc ${src_item} ${dst_item}
 				elif [ -d ${src_item} ];then
-					ln -s ${src_item} ${dst_item%/*}/
+					#ln -s ${src_item} ${dst_item%/*}/
+					rsync -avc --delete ${src_item} ${dst_item%/*}/ || rsync -avc --delete ${src_item} ${dst_item%/*}/
 				fi
 			done
 			#break	# 一个项目要么是直播要么微商?可能不一定
