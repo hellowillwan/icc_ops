@@ -1,6 +1,10 @@
 #!/bin/sh
 #
 # for zabbix low level discovery
+# /usr/local/zabbix-2.2.3/bin/zabbix_get -s 10.0.0.1 -k zabbix_low_discovery[redis]
+# {"data":[
+# { "{#REDISPORT}" : "7001" }, { "{#REDISPORT}" : "7002" }, { "{#REDISPORT}" : "7101" }, { "{#REDISPORT}" : "7102" }, { "{#REDISPORT}" : "7103" }
+# ] }
 #
 
 redis() {
@@ -8,11 +12,13 @@ redis() {
 	local ports=$(ps -ef|grep -v -e grep|grep -o 'bin.redis.*'|grep -P -o ':[0-9]+ '|tr -d ':|\t| ')
 	echo '{"data":['
 	if [ -z "$ports" ];then
-		echo -e "\t{\n\t\t{#REDISPORT}":"6379\n\t},"
+		echo -e " { \"{#REDISPORT}\" : \"6379\" } "
 	else
+		local multi_items=''
 		for port in $ports ;do
-			echo -e "\t{\n\t\t{#REDISPORT}":"${port}\n\t},"
+			local multi_items="${multi_items} { \"{#REDISPORT}\" : \"${port}\" },"
 		done
+		echo ${multi_items}|sed 's/,$//'
 	fi
 	echo '] }'
 }
