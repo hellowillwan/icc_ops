@@ -64,17 +64,17 @@ sync_individually() {
 	#echo -e "${hostname}\t${subdir}"
 	#return
 
-	# 对开启 微商城 | 直播 的项目,在分发时做软链接
+	# 对开启 微商城 ( 已包含直播 ) 的项目,在分发时做软链接
 	# 举例: /home/webs/weshop/application/modules/shop -> /home/webs/haoyadatestdemo/application/modules/shop
 	#
-	for keyword in weshop zhibo ;do
+	for keyword in weshop ;do
 		local webroot='/home/webs'				# WebRoot目录
 		local hostslist="/var/lib/${keyword}_enabled_hosts"	# 项目编号列表,一行一个
 		local filelist="/var/lib/${keyword}_filelist"		# 文件/目录,一行一个
 		if [ $keyword = 'weshop' ] ;then			# 源项目编号
 			local src_project=weshop
-		elif [ $keyword = 'zhibo' ] ;then
-			local src_project=160523fg0262
+		#elif [ $keyword = 'zhibo' ] ;then
+		#	local src_project=160523fg0262
 		fi
 		if grep -q -e "^${subdir}$" ${hostslist} ;then
 			# 源项目目录
@@ -117,16 +117,16 @@ sync_individually() {
 		for proj in $(cat /var/lib/weshop_enabled_hosts|grep -e 'demo$');do
 			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
 		done
-	elif [ "${subdir}" = '160523fg0262' ] ;then
-		# 触发相关项目分发
-		for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -v -e 'demo$');do
-			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
-		done
-	elif [ "${subdir}" = '160523fg0262demo' ] ;then
-		# 触发相关项目分发
-		for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -e 'demo$');do
-			echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
-		done
+	#elif [ "${subdir}" = '160523fg0262' ] ;then
+	#	# 触发相关项目分发
+	#	for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -v -e 'demo$');do
+	#		echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
+	#	done
+	#elif [ "${subdir}" = '160523fg0262demo' ] ;then
+	#	# 触发相关项目分发
+	#	for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -e 'demo$');do
+	#		echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
+	#	done
 	fi
 
 
