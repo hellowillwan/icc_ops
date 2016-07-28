@@ -28,7 +28,7 @@ edit_file() {
 			# backup file
 			cp -a $file ${file}_$(date +%s_%N)
 			# overwrite file
-			echo "$3"|base64 -d |sort|uniq > $file
+			echo "$3" | base64 -d | tr -d ' |\t' | sort | uniq > $file
 			if [ "$?" -eq 0 ];then
 				echo "配置保存成功,当前配置文件:"
 			else
