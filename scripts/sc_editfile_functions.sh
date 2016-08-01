@@ -13,12 +13,12 @@ edit_file() {
 		echo "Action parameter missing."
 		return 0
 	else
-		if [ "$2" = 'weshop_php_enabled_hosts' ];then
-			local file='/var/lib/weshop_php_enabled_hosts'
+		if [ "$2" = 'weshop_php_enabled_projects' ];then
+			local file='/var/lib/weshop_php_enabled_projects'
 		elif [ "$2" = 'weshop_php_filelist' ];then
 			local file='/var/lib/weshop_php_filelist'
-		elif [ "$2" = 'weshop_ui_enabled_hosts' ];then
-			local file='/var/lib/weshop_ui_enabled_hosts'
+		elif [ "$2" = 'weshop_ui_enabled_projects' ];then
+			local file='/var/lib/weshop_ui_enabled_projects'
 		elif [ "$2" = 'weshop_ui_filelist' ];then
 			local file='/var/lib/weshop_ui_filelist'
 		else
