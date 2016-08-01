@@ -13,20 +13,24 @@ edit_file() {
 		echo "Action parameter missing."
 		return 0
 	else
-		if [ "$2" = 'weshop_enabled_hosts' ];then
-			local file='/var/lib/weshop_enabled_hosts'
-		elif [ "$2" = 'weshop_filelist' ];then
-			local file='/var/lib/weshop_filelist'
+		if [ "$2" = 'weshop_php_enabled_hosts' ];then
+			local file='/var/lib/weshop_php_enabled_hosts'
+		elif [ "$2" = 'weshop_php_filelist' ];then
+			local file='/var/lib/weshop_php_filelist'
+		elif [ "$2" = 'weshop_ui_enabled_hosts' ];then
+			local file='/var/lib/weshop_ui_enabled_hosts'
+		elif [ "$2" = 'weshop_ui_filelist' ];then
+			local file='/var/lib/weshop_ui_filelist'
 		else
 			echo 'unkown file.'
 			return 1
 		fi
 
 		if [ "$1" = "read" ];then
-			cat $file
+			cat $file 2>&1
 		elif [ "$1" = "write" -a -n "$2" -a -n "$3" ];then
 			# backup file
-			cp -a $file ${file}_$(date +%s_%N)
+			test -f $file && cp -a $file ${file}_$(date +%s_%N)
 			# overwrite file
 			echo "$3" | base64 -d | tr -d ' |\t' | sort | uniq > $file
 			if [ "$?" -eq 0 ];then
