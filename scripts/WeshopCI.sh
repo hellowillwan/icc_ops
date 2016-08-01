@@ -7,8 +7,10 @@
 #
 weshop_enabled_hosts='/var/lib/weshop_enabled_hosts'	# 开启微商功能的项目编号列表,一行一个
 weshop_filelist='/var/lib/weshop_filelist'		# 需要更新的微商项目文件/目录,一行一个
-weshop_ui_enabled_hosts='/var/lib/weshop_ui_enabled_hosts'	# 开启微商 ui 的项目编号列表,一行一个
+weshop_ui_enabled_projects='/var/lib/weshop_ui_enabled_projects'	# 开启微商 ui 的项目编号列表,一行一个
 weshop_ui_filelist='/var/lib/weshop_ui_filelist'		# 需要更新的微商 ui 文件/目录,一行一个
+weshop_php_enabled_projects='/var/lib/weshop_php_enabled_projects'	# 开启微商 php 的项目编号列表,一行一个
+weshop_php_filelist='/var/lib/weshop_php_filelist'		# 需要更新的微商 php 文件/目录,一行一个
 webroot='/home/webs/dev'				# 内网dev环境(dev.umaman.xyz域名)的 WebRoot目录
 weshop_dir="${webroot}/weshop"				# 内网dev环境(dev.umaman.xyz域名)的 weshop 项目目录
 svncmd='/usr/bin/svn '
@@ -64,80 +66,106 @@ update_to_all_projects() {
 	done
 }
 
-# 同步线上生产环境 weshop 前端代码到 dev环境开启微商的具体项目
+# 从线上 weshop 生产环境 拉取 前|后端代码 到 开启微商的子项目
 pull_weshop_prod_for_child_projects() {
-	# 默认更新到所有开启微商的项目,可以接受参数只更新到指定项目
-	if [ -z "$1" ];then
-		local projects=$(cat ${weshop_ui_enabled_hosts})
+	if [ -z "$2" ];then
+		return 1
+	fi
+	local type="$1"
+	local projects="$2"
+	if [ "${type}" = 'ui' ];then
+		#local projects="$( cat ${weshop_ui_enabled_projects} )"
+		local project_list=${weshop_ui_enabled_projects}
+		local flists="$( cat ${weshop_ui_filelist} )"
+	elif [ "${type}" = 'php' ];then
+		#local projects="$( cat ${weshop_php_enabled_projects} )"
+		local project_list=${weshop_php_enabled_projects}
+		local flists="$( cat ${weshop_php_filelist} )"
 	else
-		local projects="$1"
+		return 1
 	fi
 
 	for project_code in ${projects} ;do
-		for dir in $(cat $weshop_ui_filelist);do
-			echo "pull_weshop_prod_for_child_projects ${project_code} $dir"
-			if test -d ${webroot}/${project_code}${dir} ;then 
-				# 如果该项目 存在此目录,则排除 diff 目录进行同步
-				local src_dir="web/weshop${dir}/"
-				#local src_dir="${webroot}/weshop/${dir}/"
-				local dst_dir="${webroot}/${project_code}${dir}/"
+		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
+		for item in ${flists};do
+			echo "pull_weshop_prod_for_child_projects ${project_code} $item"
+			# 确定排除参数
+			if [ "${type}" = 'ui' -a -d ${webroot}/${project_code}${item} ] ;then
+				# 如果该项目 存在此目录 并且 是操作 ui 相关目录,则排除 diff 目录进行同步
 				is_exclude_diff=" --exclude='diff' "
 			else
-				# 如果该项目 不存在此目录,则直接进行同步
-				local src_dir="web/weshop${dir}"
-				#local src_dir="${webroot}/weshop/${dir}"
-				local dst_dir="${webroot}/${project_code}${dir}"
-				local dst_dir="${dst_dir%/*}/"
-				# 确保父目录存在
-				test -d ${dst_dir} || mkdir -p ${dst_dir}
+				# 如果该项目 不存在此目录 或 操作 php 相关目录,则直接进行同步
 				is_exclude_diff=' '
 			fi
+
+			# 确定 源/目的录
+			local src_item="web/weshop${item}"
+			local dst_item="${webroot}/${project_code}${item%/*}/"
+
+			# 确保父目录存在
+			test -d ${dst_item} || mkitem -p ${dst_item}
+
+			# 拉取操作
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
 			--exclude='svn' ${is_exclude_diff} \
-			211.152.60.33::${src_dir} ${dst_dir}	# 从线上正式环境拉取
-			#${src_dir} ${dst_dir}
+			211.152.60.33::${src_item} ${dst_item}
 		done
 	done
 }
 
 # 为各个项目编译打包(webpack m2),并提交到项目SVN仓库
-pack_ui_and_commit() {
-	# 只更新到指定项目
-	if [ -z "$1" ];then
-		echo no project_code
+pack_and_commit_svn() {
+	if [ -z "$2" ];then
 		return 1
+	fi
+	local type="$1"
+	local projects="$2"
+	if [ "${type}" = 'ui' ];then
+		#local projects="$( cat ${weshop_ui_enabled_projects} )"
+		local project_list=${weshop_ui_enabled_projects}
+		local flists="$( cat ${weshop_ui_filelist} )"
+	elif [ "${type}" = 'php' ];then
+		#local projects="$( cat ${weshop_php_enabled_projects} )"
+		local project_list=${weshop_php_enabled_projects}
+		local flists="$( cat ${weshop_php_filelist} )"
 	else
-		local projects="$1"
+		return 1
 	fi
 
-	for project in ${projects};do
-		for dir in $(cat $weshop_ui_filelist);do
-			workingdir="${webroot}/${project}${dir}/"
-			echo "pack_ui_and_commit ${workingdir}"
-			if [ ! -d ${workingdir} ];then
-				echo "dir: ${workingdir} not exits."
-				continue
-			fi
-	
-			# 删除项目 ui 目录下的 node_modules,并链接到全局目录
-			rm ${workingdir}/node_modules -rf
-			ln -s /var/lib/node_modules ${workingdir}
-			# 更新
-			# ${svncmd} ${svnoptions} up ${workingdir}
-			# 打包
-			( cd ${workingdir} ; gulp pro )
-			
-			# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
-			rm ${workingdir}/node_modules -rf
-			${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1
-			# ${svncmd} ${svnoptions} --force add ${workingdir}/dist/images
-			# ${svncmd} ${svnoptions} --force add ${workingdir}/dist/js/*.js
-			# ${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/dist
-			${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/ 2>&1
-		done
+	for project_code in ${projects};do
+		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
+		if [ "${type}" = 'ui' ];then
+			for item in ${flists};do
+				workingdir="${webroot}/${project_code}${item}/"
+				echo "pack_ui_and_commit ${workingdir}"
+				if [ ! -d ${workingdir} ];then
+					echo "dir: ${workingdir} not exits."
+					continue
+				fi
+		
+				# 删除项目 ui 目录下的 node_modules,并链接到全局目录
+				rm ${workingdir}/node_modules -rf
+				ln -s /var/lib/node_modules ${workingdir}
+				# 更新
+				# ${svncmd} ${svnoptions} up ${workingdir}
+				# 打包
+				( cd ${workingdir} ; gulp pro )
+				
+				# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
+				rm ${workingdir}/node_modules -rf
+				${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1
+				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/ 2>&1
+			done
+		else
+			for item in ${flists};do
+				workingdir="${webroot}/${project_code}${item}"
+				${svncmd} ${svnoptions} --force add ${workingdir} 2>&1
+				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
+			done
+		fi
 	done
 }
 
@@ -186,27 +214,37 @@ checkoutver() {
 
 # 发布各个项目的编译打包后的文件( dev -> demo,sync_individually )
 dev2demo() {
-	# 只发布指定项目
-	if [ -z "$1" ];then
-		echo no project_code
+	if [ -z "$2" ];then
 		return 1
+	fi
+	local type="$1"
+	local projects="$2"
+	if [ "${type}" = 'ui' ];then
+		#local projects="$( cat ${weshop_ui_enabled_projects} )"
+		local project_list=${weshop_ui_enabled_projects}
+		local flists="$( cat ${weshop_ui_filelist} )"
+	elif [ "${type}" = 'php' ];then
+		#local projects="$( cat ${weshop_php_enabled_projects} )"
+		local project_list=${weshop_php_enabled_projects}
+		local flists="$( cat ${weshop_php_filelist} )"
 	else
-		local projects="$1"
+		return 1
 	fi
 
 	# 指定目录
-	for project in ${projects} ;do
-		for dir in $(cat $weshop_ui_filelist);do
+	for project_code in ${projects} ;do
+		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
+		for item in ${flists};do
 			# 发布到demo
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
 			--exclude='svn' \
-			${webroot}/${project}${dir} 211.152.60.33::web/${project}demo${dir%/*}/
+			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/
 			# 分发到所有节点
 			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
-			echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200
+			echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200 -b
 		done
 	done
 }
@@ -220,22 +258,35 @@ demo2prod() {
 	done
 }
 
-weshop_sync_prod() {
+weshop_syncto_prod_hook() {
 	# 默认更新到所有开启微商 ui 的项目,可以接受参数只更新到指定项目
-	if [ -z "$1" ];then
-		local PROJECTS=$(cat ${weshop_ui_enabled_hosts})
-	else
-		local PROJECTS="$1"
-	fi
+	#if [ -z "$1" ];then
+	#	local PROJECTS=$(cat ${weshop_ui_enabled_projects})
+	#else
+	#	local PROJECTS="$1"
+	#fi
 
-	for project in ${PROJECTS} ;do
-		echo "$(date) 项目: $project"
-		echo -en "从线上 weshop 正式环境拉取 ui 相关目录\n\t"
-			pull_weshop_prod_for_child_projects $project 2>&1 #|tail -n 1
-		echo -en "打包 ui 目录 并提交到项目 $project SVN\n\t"
-			pack_ui_and_commit $project 2>&1 #|tail -n 1
-		echo -en "发布项目 $project 到 demo 环境\n\t"
-			dev2demo $project 2>&1 |tail -n 1
+	for project in $(cat ${weshop_ui_enabled_projects}) ;do
+	#for project in 160527fg0275 ;do
+		echo "$(date) 项目: $project ui"
+		echo "从线上 weshop 正式环境拉取 ui 相关目录"
+			pull_weshop_prod_for_child_projects ui $project 2>&1 #|tail -n 1
+		echo "打包 ui 目录 并提交到项目 $project SVN"
+			pack_and_commit_svn ui $project 2>&1 #|tail -n 1
+		echo "发布项目 $project 到 demo 环境"
+			dev2demo ui $project 2>&1 |tail -n 1
+		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	done
+
+	for project in $(cat ${weshop_php_enabled_projects}) ;do
+	#for project in 160527fg0275 ;do
+		echo "$(date) 项目: $project php"
+		echo "从线上 weshop 正式环境拉取 php 相关目录"
+			pull_weshop_prod_for_child_projects php $project 2>&1 #|tail -n 1
+		echo "打包 php 目录 并提交到项目 $project SVN"
+			pack_and_commit_svn php $project 2>&1 #|tail -n 1
+		echo "发布项目 $project 到 demo 环境"
+			dev2demo php $project 2>&1  #|tail -n 1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	done
 }
@@ -248,4 +299,4 @@ weshop_sync_prod() {
 # /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync -vzrptn --blocking-io --exclude='svn' --exclude='diff' 211.152.60.33::web/weshop/public/html/m2/ /home/webs/dev/140821fg0374/public/html/m2/
 
 # 手工执行
-# . /usr/local/sbin/WeshopCI.sh ; pack_ui_and_commit 140821fg0374
+# . /usr/local/sbin/WeshopCI.sh ; pack_and_commit_svn ui 140821fg0374
