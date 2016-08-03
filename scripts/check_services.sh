@@ -193,7 +193,7 @@ proxy_nolive_upstreams() {
 	for pxy in proxy01 proxy02 ;do
 		func "${pxy}" call command run "grep 'no live upstreams' /usr/local/tengine/logs/error.log \
 			| grep -o -i -e 'upstream:.*' \
-			| awk -F'/' '{print $3}' | sort | uniq -c"
+			| awk -F'/' '{print \$3}' | sort | uniq -c"
 	done
 }
 
@@ -303,7 +303,6 @@ redis() {
 		echo info | ${REDIS_CLI} -c -h ${ip_port%%:*} -p ${ip_port##*:} | grep \
 		-e used_memory_human \
 		-e used_memory_peak_human \
-		-e rdb_last_save_time \
 		-e 'db0:keys' \
 		-e master_host \
 		-e master_port \
