@@ -146,3 +146,22 @@ check_weshopfiles() {
 		echo
 	done
 }
+
+sync_syscfgs() {
+	set -x
+	# 删除
+	func 'app*;proxy*;mongo*;host200' call command run 'rm /etc/security/limits.conf /etc/security/limits.d/* /etc/sysctl.conf /etc/sysctl.d/* -rf'
+	# 分发配置文件
+	for file in	/etc/security/limits.conf \
+			/etc/security/limits.d/90-nproc.conf \
+			/etc/security/limits.d/90-nfile.conf \
+			/etc/sysctl.conf
+	do
+		local src_file=/home/wanlong/PKG/ops/centos/${file##*/}
+		local dst_file=$file
+		func 'app*;proxy*;mongo*;host200' copyfile --file=${src_file} --remotepath=${dst_file}
+	done
+	# 生效
+	#func 'app*;proxy*;mongo*;host200' call command run '/sbin/sysctl -p /etc/sysctl.conf'
+	set +x
+}
