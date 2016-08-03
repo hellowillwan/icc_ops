@@ -92,10 +92,11 @@ pull_weshop_prod_for_child_projects() {
 			# 确定排除参数
 			if [ "${type}" = 'ui' -a -d ${webroot}/${project_code}${item} ] ;then
 				# 如果该项目 存在此目录 并且 是操作 ui 相关目录,则排除 diff 目录进行同步
-				is_exclude_diff=" --exclude='diff' "
+				#local is_exclude_diff=" --exclude='diff' "  # bad substitution
+				local is_exclude_diff=' --exclude=diff '
 			else
 				# 如果该项目 不存在此目录 或 操作 php 相关目录,则直接进行同步
-				is_exclude_diff=' '
+				unset is_exclude_diff
 			fi
 
 			# 确定 源/目的录
@@ -106,12 +107,14 @@ pull_weshop_prod_for_child_projects() {
 			test -d ${dst_item} || mkitem -p ${dst_item}
 
 			# 拉取操作
+			set -x
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
-			--exclude='svn' ${is_exclude_diff} \
+			--exclude='.svn' ${is_exclude_diff} \
 			211.152.60.33::${src_item} ${dst_item}
+			set +x
 		done
 	done
 }
@@ -156,13 +159,17 @@ pack_and_commit_svn() {
 				
 				# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
 				rm ${workingdir}/node_modules -rf
+				echo "${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1"
 				${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1
+				echo "${svncmd} ${svnoptions} commit -m\"update by weshop ci_tool ${message}\" ${workingdir}/ 2>&1"
 				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/ 2>&1
 			done
 		else
 			for item in ${flists};do
 				workingdir="${webroot}/${project_code}${item}"
+				echo "${svncmd} ${svnoptions} --force add ${workingdir} 2>&1"
 				${svncmd} ${svnoptions} --force add ${workingdir} 2>&1
+				echo "${svncmd} ${svnoptions} commit -m\"update by weshop ci_tool ${message}\" ${workingdir} 2>&1"
 				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
 			done
 		fi
@@ -235,12 +242,13 @@ dev2demo() {
 	for project_code in ${projects} ;do
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		for item in ${flists};do
+			echo "${webroot}/${project_code}${item} ---> web/${project_code}demo${item%/*}/"
 			# 发布到demo
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
-			--exclude='svn' \
+			--exclude='.svn' \
 			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/
 			# 分发到所有节点
 			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
@@ -259,44 +267,44 @@ demo2prod() {
 }
 
 weshop_syncto_prod_hook() {
-	# 默认更新到所有开启微商 ui 的项目,可以接受参数只更新到指定项目
-	#if [ -z "$1" ];then
-	#	local PROJECTS=$(cat ${weshop_ui_enabled_projects})
-	#else
-	#	local PROJECTS="$1"
-	#fi
-
+	# 对 ui|php 两个列表中的项目轮流操作
 	for project in $(cat ${weshop_ui_enabled_projects}) ;do
-	#for project in 160527fg0275 ;do
-		echo "$(date) 项目: $project ui"
-		echo "从线上 weshop 正式环境拉取 ui 相关目录"
-			pull_weshop_prod_for_child_projects ui $project 2>&1 #|tail -n 1
-		echo "打包 ui 目录 并提交到项目 $project SVN"
-			pack_and_commit_svn ui $project 2>&1 #|tail -n 1
-		echo "发布项目 $project 到 demo 环境"
-			dev2demo ui $project 2>&1 |tail -n 1
-		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	#for project in iccshow ;do
+		local log_file="/var/log/weshop_syncto_prod_hook.${project}.ui.$(date +%s_%N).log"
+		echo "$(date) 项目: $project ui" >> ${log_file}
+		echo "从线上 weshop 正式环境拉取 ui 相关目录" >> ${log_file}
+			pull_weshop_prod_for_child_projects ui $project >> ${log_file}  2>&1
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
+		echo "打包 ui 目录 并提交到项目 $project SVN" >> ${log_file}
+			pack_and_commit_svn ui $project >> ${log_file} 2>&1
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
+		echo "发布项目 $project 到 demo 环境" >> ${log_file}
+			dev2demo ui $project >> ${log_file} 2>&1
+		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 	done
 
 	for project in $(cat ${weshop_php_enabled_projects}) ;do
-	#for project in 160527fg0275 ;do
-		echo "$(date) 项目: $project php"
-		echo "从线上 weshop 正式环境拉取 php 相关目录"
-			pull_weshop_prod_for_child_projects php $project 2>&1 #|tail -n 1
-		echo "打包 php 目录 并提交到项目 $project SVN"
-			pack_and_commit_svn php $project 2>&1 #|tail -n 1
-		echo "发布项目 $project 到 demo 环境"
-			dev2demo php $project 2>&1  #|tail -n 1
-		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	#for project in iccshow ;do
+		local log_file="/var/log/weshop_syncto_prod_hook.${project}.php.$(date +%s_%N).log"
+		echo "$(date) 项目: $project php" >> ${log_file}
+		echo "从线上 weshop 正式环境拉取 php 相关目录" >> ${log_file}
+			pull_weshop_prod_for_child_projects php $project >> ${log_file} 2>&1
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
+		echo "打包 php 目录 并提交到项目 $project SVN" >> ${log_file}
+			pack_and_commit_svn php $project >> ${log_file} 2>&1
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
+		echo "发布项目 $project 到 demo 环境" >> ${log_file}
+			dev2demo php $project >> ${log_file} 2>&1
+		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 	done
 }
 
 
 # 发布到demo
-# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync  -vzrptn --blocking-io --exclude='svn' /home/webs/dev/140821fg0374/public/html/m2/ 211.152.60.33::web/140821fg0374demo/public/html/m2/
+# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync  -vzrptn --blocking-io --exclude='.svn' /home/webs/dev/140821fg0374/public/html/m2/ 211.152.60.33::web/140821fg0374demo/public/html/m2/
 
 # 拉取m2
-# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync -vzrptn --blocking-io --exclude='svn' --exclude='diff' 211.152.60.33::web/weshop/public/html/m2/ /home/webs/dev/140821fg0374/public/html/m2/
+# /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' /usr/bin/rsync -vzrptn --blocking-io --exclude='.svn' --exclude='diff' 211.152.60.33::web/weshop/public/html/m2/ /home/webs/dev/140821fg0374/public/html/m2/
 
 # 手工执行
 # . /usr/local/sbin/WeshopCI.sh ; pack_and_commit_svn ui 140821fg0374
