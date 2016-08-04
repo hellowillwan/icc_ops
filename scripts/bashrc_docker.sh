@@ -50,7 +50,14 @@ docker_stats() {
 	docker stats `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|tr '\n' ' '`
 }
 
+chownmod_tmpdir() {
+	chown -R nobody.nobody /tmp/icc_appserver_c*
+	find /tmp/icc_appserver_c* -type d -exec chmod -R 755 {} \;
+	find /tmp/icc_appserver_c* -type f -exec chmod -R 644 {} \;
+}
+
 ngx_reload() {
+	chownmod_tmpdir &>/dev/null &
 	for ctn in `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|grep -e 'icc_appserver'|tr '\n' ' '`; do
 		echo "${ctn} reload nginx : "
 		docker exec -i ${ctn} /usr/local/tengine/sbin/nginx -s reload
@@ -67,6 +74,7 @@ ngx_restart() {
 }
 
 php_restart() {
+	chownmod_tmpdir &>/dev/null &
 	for ctn in `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|grep -e 'icc_appserver'|tr '\n' ' '`; do
 		echo "${ctn} stop nginx : "
 		docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx -s stop &>/dev/null; /usr/local/tengine/sbin/nginx -s stop &>/dev/null'
