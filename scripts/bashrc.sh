@@ -130,17 +130,17 @@ sync_zabbix_cfg_bins() {
 }
 
 check_weshopfiles() {
-        if [ -z "$1" ];then
-                local PROJECTS=$(cat /var/lib/weshop_enabled_hosts)
-        else
-                local PROJECTS="$1"
-        fi
+	if [ -z "$1" ];then
+		local PROJECTS=$(cat /var/lib/weshop_enabled_hosts)
+	else
+		local PROJECTS="$1"
+	fi
 
-        for p in ${PROJECTS} ;do
+	for p in ${PROJECTS} ;do
 		echo $p|grep -q -e 'demo$' && local weshopdir=weshopdemo || local weshopdir=weshop
 		echo $p
 		for f in $(cat /var/lib/weshop_filelist);do
-			diff -r         /home/webs/${weshopdir}/$f /home/webs/$p/$f &>/dev/null \
+			diff -r	 /home/webs/${weshopdir}/$f /home/webs/$p/$f &>/dev/null \
 			|| echo diff -r /home/webs/${weshopdir}/$f /home/webs/$p/$f
 		done
 		echo
@@ -165,3 +165,34 @@ sync_syscfgs() {
 	#func 'app*;proxy*;mongo*;host200' call command run '/sbin/sysctl -p /etc/sysctl.conf'
 	set +x
 }
+
+flush() {
+	#set -x
+	#
+	# 连续测试一个URL n 次,观察是否有无法建立连接的情况发生
+	#
+
+	if [ -z "$3" -o $1 -le 0 ];then
+		echo "usage: $0 [ number ip:port url ]"
+		return 1
+	fi
+	local n=$1
+	local ip_port="$2"
+	local url="$3"
+
+	for i in `seq ${n}` ; do
+		#clear
+		#time \
+		echo -n "seq:$i "
+		#-b '__URM_UID__=05g8LVbX52Wo4zdxAxOvAg==' \
+		#-b 'PHPSESSID=jrg5r5no414lk3i75qgsseadc0' \
+		#-H 'X-Forwarded-For:5.5.5.6' \
+		curl -sx ${ip_port} "${url}" \
+		-o /dev/null \
+		-w 'http_code:%{http_code} time_namelookup:%{time_namelookup} time_connect:%{time_connect} time_pretransfer:%{time_pretransfer} time_starttransfer:%{time_starttransfer} time_total:%{time_total}'
+		echo " ret:$?"
+		#sleep 1
+	done
+	#set +x
+}
+
