@@ -172,7 +172,7 @@ flush() {
 	# 连续测试一个URL n 次,观察是否有无法建立连接的情况发生
 	#
 
-	if [ -z "$3" -o $1 -le 0 ];then
+	if [ -z "$3" ] || [ $1 -le 0 ];then
 		echo "usage: $0 [ number ip:port url ]"
 		return 1
 	fi
@@ -183,7 +183,7 @@ flush() {
 	for i in `seq ${n}` ; do
 		#clear
 		#time \
-		echo -n "seq:$i "
+		printf "%-3s %-4s " seq $i
 		#-b '__URM_UID__=05g8LVbX52Wo4zdxAxOvAg==' \
 		#-b 'PHPSESSID=jrg5r5no414lk3i75qgsseadc0' \
 		#-H 'X-Forwarded-For:5.5.5.6' \
