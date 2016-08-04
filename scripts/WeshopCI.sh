@@ -269,7 +269,7 @@ demo2prod() {
 weshop_syncto_prod_hook() {
 	# 对 ui|php 两个列表中的项目轮流操作
 	for project in $(cat ${weshop_ui_enabled_projects}) ;do
-	#for project in iccshow ;do
+	#for project in haoyadatest ;do
 		local log_file="/var/log/weshop_syncto_prod_hook.${project}.ui.$(date +%s_%N).log"
 		echo "$(date) 项目: $project ui" >> ${log_file}
 		echo "从线上 weshop 正式环境拉取 ui 相关目录" >> ${log_file}
@@ -281,10 +281,17 @@ weshop_syncto_prod_hook() {
 		echo "发布项目 $project 到 demo 环境" >> ${log_file}
 			dev2demo ui $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
+		# 发邮件
+		local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,wendyguo@icatholic.net.cn,lihua@catholic.net.cn'
+		local to_list="${to_list},youngyang@icatholic.net.cn,willwan@icatholic.net.cn"
+		local subject="Syncing Weshop UI to project: ${project}'s SVN&DEMO has completed"
+		local content="$subject. check attachment for more details."
+		local file="$log_file"
+		sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
 	done
 
 	for project in $(cat ${weshop_php_enabled_projects}) ;do
-	#for project in iccshow ;do
+	#for project in haoyadatest ;do
 		local log_file="/var/log/weshop_syncto_prod_hook.${project}.php.$(date +%s_%N).log"
 		echo "$(date) 项目: $project php" >> ${log_file}
 		echo "从线上 weshop 正式环境拉取 php 相关目录" >> ${log_file}
@@ -296,6 +303,13 @@ weshop_syncto_prod_hook() {
 		echo "发布项目 $project 到 demo 环境" >> ${log_file}
 			dev2demo php $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
+		# 发邮件
+		local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,wendyguo@icatholic.net.cn,lihua@catholic.net.cn'
+		local to_list="${to_list},youngyang@icatholic.net.cn,willwan@icatholic.net.cn"
+		local subject="Syncing Weshop PHP to project: ${project}'s SVN&DEMO has completed"
+		local content="$subject. check attachment for more details."
+		local file="$log_file"
+		sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
 	done
 }
 
