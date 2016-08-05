@@ -349,6 +349,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	restart_all_pyweixin)
 		/usr/bin/func 'app*' call command run '. ~/.bashrc;pyweixin_restart'
 		ret=$?
+		sleep 5
 		/usr/local/sbin/check_services.sh pyweixin 2>&1
 		logger CommonWorker $p1 $p2 return code:$ret
 		exit $ret
