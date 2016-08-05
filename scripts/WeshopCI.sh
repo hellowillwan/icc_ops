@@ -107,14 +107,13 @@ pull_weshop_prod_for_child_projects() {
 			test -d ${dst_item} || mkitem -p ${dst_item}
 
 			# 拉取操作
-			set -x
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
 			--exclude='.svn' ${is_exclude_diff} \
-			211.152.60.33::${src_item} ${dst_item}
-			set +x
+			211.152.60.33::${src_item} ${dst_item} 2>&1
+			echo
 		done
 	done
 }
@@ -142,8 +141,8 @@ pack_and_commit_svn() {
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		if [ "${type}" = 'ui' ];then
 			for item in ${flists};do
-				workingdir="${webroot}/${project_code}${item}/"
-				echo "pack_ui_and_commit ${workingdir}"
+				local workingdir="${webroot}/${project_code}${item}/"
+				echo "pack_ui ${workingdir}"
 				if [ ! -d ${workingdir} ];then
 					echo "dir: ${workingdir} not exits."
 					continue
@@ -156,21 +155,29 @@ pack_and_commit_svn() {
 				# ${svncmd} ${svnoptions} up ${workingdir}
 				# 打包
 				( cd ${workingdir} ; gulp pro )
+				echo
 				
 				# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
 				rm ${workingdir}/node_modules -rf
-				echo "${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1"
+				echo "svn add ${workingdir}"
 				${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1
-				echo "${svncmd} ${svnoptions} commit -m\"update by weshop ci_tool ${message}\" ${workingdir}/ 2>&1"
+				echo
+				echo "svn commit ${workingdir}/"
 				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/ 2>&1
+				echo
 			done
 		else
 			for item in ${flists};do
-				workingdir="${webroot}/${project_code}${item}"
-				echo "${svncmd} ${svnoptions} --force add ${workingdir} 2>&1"
-				${svncmd} ${svnoptions} --force add ${workingdir} 2>&1
-				echo "${svncmd} ${svnoptions} commit -m\"update by weshop ci_tool ${message}\" ${workingdir} 2>&1"
+				local workingdir="${webroot}/${project_code}${item}"
+				echo "svn add ${workingdir}"
+				until ${svncmd} ${svnoptions} --force add ${workingdir} 2>&1;do
+					local workingdir=${workingdir%/*}
+					[ "${workingdir}" = "${webroot}" ] && break
+				done
+				echo
+				echo "svn commit ${workingdir}"
 				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
+				echo
 			done
 		fi
 	done
@@ -242,14 +249,15 @@ dev2demo() {
 	for project_code in ${projects} ;do
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		for item in ${flists};do
-			echo "${webroot}/${project_code}${item} ---> web/${project_code}demo${item%/*}/"
+			echo "sync to demo ${project_code} ${item}"
 			# 发布到demo
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
 			--exclude='.svn' \
-			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/
+			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/ 2>&1
+			echo
 			# 分发到所有节点
 			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
 			echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200 -b
@@ -272,6 +280,7 @@ weshop_syncto_prod_hook() {
 	#for project in haoyadatest ;do
 		local log_file="/var/log/weshop_syncto_prod_hook.${project}.ui.$(date +%s_%N).log"
 		echo "$(date) 项目: $project ui" >> ${log_file}
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
 		echo "从线上 weshop 正式环境拉取 ui 相关目录" >> ${log_file}
 			pull_weshop_prod_for_child_projects ui $project >> ${log_file}  2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
@@ -294,6 +303,7 @@ weshop_syncto_prod_hook() {
 	#for project in haoyadatest ;do
 		local log_file="/var/log/weshop_syncto_prod_hook.${project}.php.$(date +%s_%N).log"
 		echo "$(date) 项目: $project php" >> ${log_file}
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
 		echo "从线上 weshop 正式环境拉取 php 相关目录" >> ${log_file}
 			pull_weshop_prod_for_child_projects php $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
