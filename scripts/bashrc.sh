@@ -155,8 +155,22 @@ check_weshopfiles() {
 	done
 }
 
+check_syscfgs() {
+	# 检查配置文件
+	for file in	/etc/security/limits.conf \
+			/etc/security/limits.d/90-nproc.conf \
+			/etc/security/limits.d/90-nfile.conf \
+			/etc/sysctl.conf
+	do
+		local src_file=/home/wanlong/PKG/ops/centos/${file##*/}
+		local dst_file=$file
+		md5sum ${src_file}
+		func 'app*;proxy*;mongo*;host200' call command run "md5sum ${dst_file}"
+		echo
+	done
+}
+
 sync_syscfgs() {
-	set -x
 	# 删除
 	func 'app*;proxy*;mongo*;host200' call command run 'rm /etc/security/limits.conf /etc/security/limits.d/* /etc/sysctl.conf /etc/sysctl.d/* -rf'
 	# 分发配置文件
@@ -170,18 +184,16 @@ sync_syscfgs() {
 		func 'app*;proxy*;mongo*;host200' copyfile --file=${src_file} --remotepath=${dst_file}
 	done
 	# 生效
-	#func 'app*;proxy*;mongo*;host200' call command run '/sbin/sysctl -p /etc/sysctl.conf'
-	set +x
+	func 'app*;proxy*;mongo*;host200' call command run '/sbin/sysctl -p /etc/sysctl.conf &>/dev/null'
 }
 
 flush() {
-	#set -x
 	#
 	# 连续测试一个URL n 次,观察是否有无法建立连接的情况发生
 	#
 
 	if [ -z "$3" ] || [ $1 -le 0 ];then
-		echo "usage: $0 [ number ip:port url ]"
+		echo -e "usage: $0 number ip:port url\nflush 10 211.152.60.45:80 'http://iwebsite2.umaman.com/invoke/index/mongodb'"
 		return 1
 	fi
 	local n=$1
@@ -201,6 +213,5 @@ flush() {
 		echo " ret:$?"
 		#sleep 1
 	done
-	#set +x
 }
 

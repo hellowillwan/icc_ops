@@ -18,6 +18,8 @@ done
 
 # purge cache
 diff  -x 'accounts.php' -r /var/www/html/purge /home/wanlong/PKG/ops/scripts/purge | grep -v -e '^Only in /home/wanlong/PKG/ops/scripts/purge'
+# bashrc
+diff ~/.bashrc bashrc.sh || echo diff ~/.bashrc bashrc.sh
 
 #
 # 检查ngx配置文件
