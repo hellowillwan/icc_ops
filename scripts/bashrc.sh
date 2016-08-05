@@ -46,18 +46,26 @@ sync_time_to_all() {
 check_containers_hosts() {
 	md5sum /tmp/xdebug_log_dir/.hosts
 	echo
+	# php containers
 	func 'app*' call command run \
 	". ~/.bashrc; \
 	docker_run_a_cmd_on_all_container 'md5sum /etc/hosts' \
 	| grep -v -e ':' -e '^\$' | sort | uniq -c"
+	# python containers
+	func 'app*' call command run \
+	"docker exec py_weixin_service_1 md5sum /etc/hosts"
 }
 
 sync_hosts_to_containers() {
+	# php containers
 	func 'app*' call command run \
 	". ~/.bashrc; \
 	docker_run_a_cmd_on_all_container \
 	'[ -r /var/log/xdebug_log_dir/.hosts -a -s /var/log/xdebug_log_dir/.hosts ] && cat /var/log/xdebug_log_dir/.hosts > /etc/hosts;echo \$?' \
 	| grep -v -e ':' -e '^\$' | sort | uniq -c"
+	# python containers
+	func 'app*' call command run \
+	"cat /var/log/xdebug_log_dir/.hosts > /tmp/hosts ; docker exec py_weixin_service_1 bash -c 'cat /tmp/hosts > /etc/hosts'"
 	check_containers_hosts
 }
 
@@ -189,7 +197,7 @@ flush() {
 		#-H 'X-Forwarded-For:5.5.5.6' \
 		curl -sx ${ip_port} "${url}" \
 		-o /dev/null \
-		-w 'http_code:%{http_code} time_namelookup:%{time_namelookup} time_connect:%{time_connect} time_pretransfer:%{time_pretransfer} time_starttransfer:%{time_starttransfer} time_total:%{time_total}'
+		-w "http_code:%{http_code} time_namelookup:%{time_namelookup} time_connect:%{time_connect} time_pretransfer:%{time_pretransfer} time_starttransfer:%{time_starttransfer} time_total:%{time_total}"
 		echo " ret:$?"
 		#sleep 1
 	done
