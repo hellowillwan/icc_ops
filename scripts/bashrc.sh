@@ -217,11 +217,12 @@ flush() {
 }
 
 
-clean_out() {
+cleanlogout() {
 	history -c
 	:>~/.bash_history
 	:>~/.lesshst
 	:>~/.viminfo
+	logout
 }
 
 pingport() {
