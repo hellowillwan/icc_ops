@@ -193,7 +193,8 @@ flush() {
 	#
 
 	if [ -z "$3" ] || [ $1 -le 0 ];then
-		echo -e "usage: $0 number ip:port url\nflush 10 211.152.60.45:80 'http://iwebsite2.umaman.com/invoke/index/mongodb'"
+		echo "usage: $FUNCNAME number ip:port url"
+		echo "$FUNCNAME 10 211.152.60.45:80 'http://iwebsite2.umaman.com/invoke/index/mongodb'"
 		return 1
 	fi
 	local n=$1
@@ -215,3 +216,28 @@ flush() {
 	done
 }
 
+
+clean_out() {
+	history -c
+	:>~/.bash_history
+	:>~/.lesshst
+	:>~/.viminfo
+}
+
+pingport() {
+	if [ -z $1 ];then
+		echo "usage: $FUNCNAME ip1:port1 ip2:port2 ..."
+		echo $FUNCNAME 139.196.54.21:80 211.152.60.45:80 211.152.60.33:873
+		return 1
+	fi
+	for i in {1..100};do
+		for ipport in $@ ;do
+			local ip=${ipport%:*}
+			local port=${ipport#*:}
+			echo -en "$(date '+%H:%m:%S')\t${ip}\t"
+			nmap -Pn -p $port $ip 2>&1 |grep "^$port" 2>/dev/null
+		done
+			echo
+			sleep 1
+	done
+}
