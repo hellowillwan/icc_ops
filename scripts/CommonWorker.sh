@@ -264,26 +264,26 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	get_project_status|add_project|dir_tree)
 		$cmd $p3
 		logger Deployer $p1 $p2 $p3 return code:$?
-	        ;;
+		;;
 	add_hostname|sync_demo_prod)
 		$cmd $p3 $p4
 		ret=$?
 		logger Deployer $p1 $p2 $p3 $p4 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	sync_a_project_code)
 		source /usr/local/sbin/sync_a_project_code.sh
 		sync_individually $p3
 		ret=$?
 		logger Deployer $p1 $p2 $p3 $p4 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	reload_nginx)
 		#/usr/bin/func 'app0[1-4]' call command run "/usr/sbin/nginx -s reload"
 		#/usr/bin/func 'proxy0[1-2]' call command run "/usr/local/tengine/sbin/nginx -s reload"
 		/usr/local/sbin/RsyncCfg.sh $p3 2>&1
 		logger Deployer $p1 $p2 $p3 return code:$?
-	        ;;
+		;;
 	check_services)
 		/usr/local/sbin/check_services.sh $p3 2>&1
 		;;
@@ -314,7 +314,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		ret=$?
 		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	mongo_query|mongo_sync|check_mongo_sync)
 		source /usr/local/sbin/sc_mongodb_functions.sh
 		#mongo_query	db col query projection sort limit skip
@@ -324,28 +324,28 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		ret=$?
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 $p8 $p9 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	cronjob_list)
 		source /usr/local/sbin/sc_cronjob_functions.sh
 		$cmd $p3 $p4 $p5 $p6 $p7 $p8|sort -t '|' -k3
 		ret=$?
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	cronjob_add|cronjob_del|cronjob_disable|cronjob_enable|cronjob_runonce|cronjob_taillog|cronjob_maillog)
 		source /usr/local/sbin/sc_cronjob_functions.sh
 		$cmd $p3 $p4 $p5 $p6 $p7 $p8
 		ret=$?
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	restart_all_nginx_php)
 		source /usr/local/sbin/sc_nginx_php_functions.sh
 		$cmd
 		ret=$?
 		logger CommonWorker $p1 $p2 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	restart_all_pyweixin)
 		/usr/bin/func 'app*' call command run '. ~/.bashrc;pyweixin_restart'
 		ret=$?
@@ -353,7 +353,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		/usr/local/sbin/check_services.sh pyweixin 2>&1
 		logger CommonWorker $p1 $p2 return code:$ret
 		exit $ret
-	        ;;
+		;;
 	swoolechat_restart)
 		app="$p3"
 		port="$p4"
@@ -365,15 +365,19 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	flush_alicdn)
 		source /usr/local/sbin/sc_cdn_functions.sh
 		$cmd $p3 $p4 | logger
-	        ;;
+		;;
 	sendemail)
 		sendemail "$p3" "$p4" "$p5" "$p6"
-	        ;;
+		;;
+	diff_weshopcode)
+		source /usr/local/sbin/weshopci.sh
+		diff_weshopcode $p3 $p4
+		;;
 	test_timeout)
 		sleep 1200
 		ret=$?
 		echo "ret:${ret}"
-	        ;;
+		;;
 	*)
 		echo "unknow command,return code:3"
 		exit 3
