@@ -141,7 +141,7 @@ pack_and_commit_svn() {
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		if [ "${type}" = 'ui' ];then
 			for item in ${flists};do
-				local workingdir="${webroot}/${project_code}${item}/"
+				local workingdir="${webroot}/${project_code}${item}"
 				echo "pack_ui ${workingdir}"
 				if [ ! -d ${workingdir} ];then
 					echo "dir: ${workingdir} not exits."
@@ -150,7 +150,7 @@ pack_and_commit_svn() {
 		
 				# 删除项目 ui 目录下的 node_modules,并链接到全局目录
 				rm ${workingdir}/node_modules -rf
-				ln -s /var/lib/node_modules ${workingdir}
+				ln -s /var/lib/node_modules ${workingdir}/
 				# 更新
 				# ${svncmd} ${svnoptions} up ${workingdir}
 				# 打包
@@ -160,10 +160,10 @@ pack_and_commit_svn() {
 				# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
 				rm ${workingdir}/node_modules -rf
 				echo "svn add ${workingdir}"
-				${svncmd} ${svnoptions} --force add ${workingdir}/ 2>&1
+				${svncmd} ${svnoptions} --force add ${workingdir} 2>&1
 				echo
-				echo "svn commit ${workingdir}/"
-				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir}/ 2>&1
+				echo "svn commit ${workingdir}"
+				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
 				echo
 			done
 		else
