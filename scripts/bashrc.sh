@@ -14,6 +14,7 @@ alias goto5.41='ssh -p 8389 wanlong@127.0.0.1'
 alias mongo5.40='/home/60000/bin/mongo 127.0.0.1:37017'
 alias redis-cli='/home/redis-cluster/bin/redis-cli'
 alias psp="ps -e -o'pcpu,pmem,rsz,pid,comm,args'|sort -k1,2nr|head -n 50"
+alias forget='export HISTFILE=/dev/null'
 alias hdp='su root -c "su - hadoop"'
 alias vanke='echo "connecting to 121.40.150.104";ssh root@121.40.150.104'
 alias hqvanke='echo "connecting to 139.196.54.21"; ssh root@139.196.54.21'
@@ -193,8 +194,8 @@ flush() {
 	#
 
 	if [ -z "$3" ] || [ $1 -le 0 ];then
-		echo "usage: $FUNCNAME number ip:port url"
-		echo "$FUNCNAME 10 211.152.60.45:80 'http://iwebsite2.umaman.com/invoke/index/mongodb'"
+		echo "usage: ${FUNCNAME[0]} number ip:port url"
+		echo "${FUNCNAME[0]} 10 211.152.60.45:80 'http://iwebsite2.umaman.com/invoke/index/mongodb'"
 		return 1
 	fi
 	local n=$1
@@ -227,8 +228,8 @@ cleanlogout() {
 
 pingport() {
 	if [ -z $1 ];then
-		echo "usage: $FUNCNAME ip1:port1 ip2:port2 ..."
-		echo $FUNCNAME 139.196.54.21:80 211.152.60.45:80 211.152.60.33:873
+		echo "usage: ${FUNCNAME[0]} ip1:port1 ip2:port2 ..."
+		echo ${FUNCNAME[0]} 139.196.54.21:80 211.152.60.45:80 211.152.60.33:873
 		return 1
 	fi
 	for i in {1..100};do
