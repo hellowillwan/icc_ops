@@ -372,6 +372,11 @@ mongo_sync () {
 		DST_ENV='dev'
 		DST_HOST='10.0.0.200'
 		DST_PORT=37017
+		if [ "${DST_DB}" = 'ICCv1RO' ];then
+			DST_ENV='dev'
+			DST_HOST='10.0.0.200'
+			DST_PORT=38017
+		fi
 	elif [ ${DIRECTION} = 'upload' ];then
 		SRC_ENV='dev'
 		SRC_HOST='10.0.0.200'
