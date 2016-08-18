@@ -290,9 +290,12 @@ weshop_syncto_prod_hook() {
 		echo "发布项目 $project 到 demo 环境" >> ${log_file}
 			dev2demo ui $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
+		# 压缩日志文件
+		gzip $log_file ; local log_file="${log_file}.gz"
 		# 发邮件
 		local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,wendyguo@icatholic.net.cn,lihua@catholic.net.cn'
 		local to_list="${to_list},youngyang@icatholic.net.cn,willwan@icatholic.net.cn"
+		local to_list="${to_list},handersonguo@icatholic.net.cn,hansonzhang@icatholic.net.cn,zhuweiyou@icatholic.net.cn"
 		local subject="Syncing Weshop UI to project: ${project}'s SVN&DEMO has completed"
 		local content="$subject. check attachment for more details."
 		local file="$log_file"
@@ -313,9 +316,12 @@ weshop_syncto_prod_hook() {
 		echo "发布项目 $project 到 demo 环境" >> ${log_file}
 			dev2demo php $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
+		# 压缩日志文件
+		gzip $log_file ; local log_file="${log_file}.gz"
 		# 发邮件
 		local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,wendyguo@icatholic.net.cn,lihua@catholic.net.cn'
 		local to_list="${to_list},youngyang@icatholic.net.cn,willwan@icatholic.net.cn"
+		local to_list="${to_list},handersonguo@icatholic.net.cn,hansonzhang@icatholic.net.cn,zhuweiyou@icatholic.net.cn"
 		local subject="Syncing Weshop PHP to project: ${project}'s SVN&DEMO has completed"
 		local content="$subject. check attachment for more details."
 		local file="$log_file"
