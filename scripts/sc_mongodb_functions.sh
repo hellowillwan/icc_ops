@@ -407,7 +407,7 @@ mongo_sync () {
 		| /home/60000/bin/mongo ${SRC_HOST}:${SRC_PORT}/${SRC_DB} 2>/dev/null \
 		| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
 	
-	echo -e "导出 ${SRC_ENV} 环境 ${SRC_DB}.${SRC_COLLECTION} : ${dump_result} 文档数量 : $src_records_number\n"
+	echo "导出 ${SRC_ENV} 环境 ${SRC_DB}.${SRC_COLLECTION} : ${dump_result} 文档数量 : $src_records_number"
 
 	#restore to DST_HOST:DST_PORT/DST_DB DST_COLLECTION
 	[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restoring" >> $STATS_FILE
@@ -431,11 +431,11 @@ mongo_sync () {
 			local restore_times=$((${restore_times}+1))	# 计数器加1
 		done
 
-		echo "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : ${restore_result} 文档数量 : $dst_records_number"
+		echo -e "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : ${restore_result} 文档数量 : $dst_records_number\n"
 	else
 		#bson文件为空
 		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#no_file_to_restore" >> $STATS_FILE
-		echo "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : 集合不存在或为空,无法导入"
+		echo -e "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : 集合不存在或为空,无法导入\n"
 	fi
 
 	if [ "$LOG" -eq 1 ] ;then
