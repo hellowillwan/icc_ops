@@ -9,7 +9,7 @@ ini_set("display_startup_errors",0);
 */
 
 //检查客户端IP
-$allowips = array('114.111.166.46','114.92.216.159','101.231.69.78','116.237.247.161','27.115.13.122','27.115.13.123','27.115.13.124','211.152.60.36','114.88.56.101','114.88.61.90');
+$allowips = array_map('trim',file('white.list'));
 if ( strpos($_SERVER['REMOTE_ADDR'],'10.0.0.') !== 0 && array_search($_SERVER['REMOTE_ADDR'],$allowips) === false){
 	echo "<html><body><h1>Rejected!</h1>You are not allowed to enter from IP:{$_SERVER['REMOTE_ADDR']}.</body></html>";
 	exit;
