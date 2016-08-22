@@ -39,6 +39,8 @@ sync_app_php_conf () {
 	for ip in  ${APP_IP_ARY[@]} ;do 
 		RsyncCfg '/home/app_php_conf/' $ip app_php_conf
 	done
+	# app05 内存比较多,配置中需要特别设置
+	func 'app05' call command run "/usr/bin/sed -i '/^pm.max_children/c\pm.max_children = 600' /etc/app_php_conf/php-5.4/php-fpm.d/www.conf" &>/dev/null
 }
 
 sync_app_nginx_conf () {
@@ -49,7 +51,8 @@ sync_app_nginx_conf () {
 	# RELOAD apps nginx of all docker containers
 	for ip in  ${APP_IP_ARY[@]} ;do 
 		echo "${ip}"|grep -q -P -e '^10.0.0.(1|2|24)$' && break #没有docker容器在运行,忽略
-		echo $localkey ngx_reload | gearman -f "CommonWorker_${ip}"
+		local cmd=ngx_reload # restart_nginx_php
+		echo $localkey $cmd | gearman -f "CommonWorker_${ip}"
 	done
 }
 
