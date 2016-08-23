@@ -5,6 +5,7 @@
 *
 */
 
+
 /*
  * 清理孤儿文档
  *
@@ -21,6 +22,23 @@ for (var i in ICC_COLLECTIONS) {
 		print(ns + "\tresult:\t" + ret1 + "\t" + ret2);
 	//}
 }
+*/
+
+
+/*
+ * 查 Oplog
+ *
+//var masters = ['10.0.0.42:60000','10.0.0.52:60000'];
+var masters = ['10.0.0.52:60000'];
+for ( var i in masters) {
+	var master = masters[i];
+	var db = connect(master+"/local");
+	//Cursor
+	var myCursor = db.oplog.rs.find({"ns":"ICCv1.idatabase_collection_568f1b6db1752f4c358b54b9","ts":{"$gte":Timestamp(1471881600,00000)}});
+	while ( myCursor.hasNext() ) {
+		printjson(myCursor.next());
+	}
+} 
 */
 
 
