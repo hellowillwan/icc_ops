@@ -1,0 +1,57 @@
+
+server {
+	listen	80;
+	server_name	PROJECT_DOMAIN;
+
+	charset UTF-8;
+	access_log  /usr/local/nginx/logs/$host.access.log  main;
+
+	include global.conf;
+
+	location / {
+		proxy_next_upstream http_502 error invalid_header;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP  $remote_addr;
+		proxy_pass http://$myapppool;
+	}
+
+	location ~ /purge(/.*) {
+		allow 10.0.0.200 ;
+		allow 211.152.60.33;
+		allow 127.0.0.1;
+		allow 222.66.84.21;
+		allow 27.115.13.124;	
+		deny all;
+		#proxy_cache_purge CACHE_ZONE_NAME $host$1$is_args$args;
+		access_log off;
+	}
+
+	location ~* \.(jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|ogv|avi|wma|wmv|ttf|eot|otf|woff|svg|txt|json|html)$ {
+		# 替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
+		sub_filter '<base href="/' '<base href="http://PROJECT_DOMAIN_STATIC/';
+		sub_filter_last_modified on;
+
+		# 跨域相关
+		add_header "Access-Control-Allow-Origin" *;
+		add_header "Access-Control-Allow-Headers" 'Origin, X-Requested-With, Content-Type, Accept';
+
+		proxy_next_upstream http_502 error invalid_header;
+		proxy_upstream_tries 3;
+		#proxy_cache CACHE_ZONE_NAME;
+		#proxy_cache_valid  200 301 302 304 1800s;
+		#proxy_cache_key $host$uri$is_args$args;
+		#proxy_no_cache $flag_cache_empty;
+		#proxy_cache_bypass $flag_cache_empty;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP  $remote_addr;
+		proxy_pass http://$myapppool;
+		#add_header X-Cache-s $upstream_cache_status;
+		userid off;
+		expires 1800s;
+	}
+
+	location ~* /\.(ht|git|svn) {
+		deny  all;
+	}
+
+}

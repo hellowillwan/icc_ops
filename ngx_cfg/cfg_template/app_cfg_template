@@ -1,0 +1,31 @@
+
+server
+{
+	listen  80;
+	server_name	PROJECT_DOMAIN;
+	access_log  /var/log/nginx/$host.access.log  main;
+	index index.php index.html index.htm default.html default.htm default.php;
+	root  /home/webs/PROJECT_CODE/public;
+
+	location / {
+		#try_files $uri $uri/ @rewrites;	# 这个机制会发出一个 301 跳转到 http://$uri/ ,在前端代理配置了 https 的情况下会有问题.
+		#try_files $uri @rewrites;		# 这样写 请求 /dir /dir/ 都会到 @rewrites ,即便 /dir/index.html 存在.
+		try_files $uri $uri/index.html @rewrites;
+	}
+
+	location @rewrites {
+		rewrite ^ /index.php?$args;
+	}
+
+	location ~ .*\.php$ {
+		fastcgi_pass    127.0.0.1:9000;
+		fastcgi_index index.php;
+		include fcgi.conf;
+		#fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+		#INCLUDE_FASTCGI_PARAMS_TAG;
+	}
+
+	location ~* \.(html|jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|avi|wma|wmv|ttf|eot|otf|woff|svg)$ {
+		try_files $uri /404.html =404;
+	}
+}
