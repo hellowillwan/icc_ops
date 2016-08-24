@@ -33,8 +33,10 @@ var masters = ['10.0.0.52:60000'];
 for ( var i in masters) {
 	var master = masters[i];
 	var db = connect(master+"/local");
-	//Cursor
+	// Cursor
 	var myCursor = db.oplog.rs.find({"ns":"ICCv1.idatabase_collection_568f1b6db1752f4c358b54b9","ts":{"$gte":Timestamp(1471881600,00000)}});
+	// killOp like this
+	//db.currentOp({"client" : /^10.0.0.200:/,"ns":"local.oplog.rs","secs_running":{$gte:1500},"connectionId":595348})
 	while ( myCursor.hasNext() ) {
 		printjson(myCursor.next());
 	}
