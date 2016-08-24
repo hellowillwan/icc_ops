@@ -169,6 +169,7 @@ add_project ()
 		project_domain_backup="${project_code}.icatholiccloud.com ${project_code}.icatholiccloud.net ${project_code}.icatholiccloud.cn"
 		# 配置模板中需要替换的变量
 		PROJECT_DOMAIN="$project_domain $project_domain_static $project_domain_backup"
+		PROJECT_DOMAIN_STATIC="${project_domain_static}"
 		CACHE_ZONE_NAME="$project_domain"
 
 		#生成项目app配置
@@ -194,7 +195,8 @@ add_project ()
 		>> $proxy_cache_cfg
 		#proxy_cfg
 		cat $proxy_cfg_t | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
-						-e "s/CACHE_ZONE_NAME/$CACHE_ZONE_NAME/g" > $proxy_cfg_path$subpath$project_code.conf 
+						-e "s/PROJECT_DOMAIN_STATIC/$PROJECT_DOMAIN_STATIC/g" \
+						-e "s/CACHE_ZONE_NAME/$CACHE_ZONE_NAME/g" > $proxy_cfg_path$subpath$project_code.conf
 		if [ $? -gt 0 ];then
 			#proxy_cfg创建失败,返回
 			echo "Deployer : $project_code proxy_cfg creating with error,return code:2"
