@@ -44,7 +44,7 @@ iwebsite2() {
 	elif [ "$1" = 'mongodb' ];then
 		# 监测 http://iwebsite2.umaman.com/invoke/index/mongodb
 		if /usr/bin/curl -m 5 -sx 10.0.0.1:80 http://iwebsite2.umaman.com/invoke/index/mongodb \
-			| tr '\n' ' '|grep -i -e '__CREATE_TIME__.*__MODIFY_TIME__' -q ;then
+			| tr '\n' ' '|grep -i -e '_id' -q ;then
 			local result=1
 		else
 			local result=0
