@@ -139,9 +139,10 @@ pack_and_commit_svn() {
 
 	for project_code in ${projects};do
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
-		if [ "${type}" = 'ui' ];then
-			for item in ${flists};do
-				local workingdir="${webroot}/${project_code}${item}"
+		for item in ${flists};do
+			local workingdir="${webroot}/${project_code}${item}"
+			# 打包前端文件
+			if [ "${type}" = 'ui' ];then
 				echo "pack_ui ${workingdir}"
 				if [ ! -d ${workingdir} ];then
 					echo "dir: ${workingdir} not exits."
@@ -161,35 +162,35 @@ pack_and_commit_svn() {
 				rm ${workingdir}/node_modules -rf
 				# 等待一段时间 打包后清理临时文件可能需要一点时间
 				sleep 5
+			fi
 
-				# 添加并提交到 SVN
-				echo "svn add ${workingdir}"
-				${svncmd} ${svnoptions} add --force ${workingdir} 2>&1
-				echo
-				# 检查一下,以防某些临时文件被 svn add
-				if ${svncmd} ${svnoptions} st ${workingdir} | grep -q -e '^!';then
-					for badfile in $(${svncmd} ${svnoptions} st ${workingdir} | grep -e '^!' 2>/dev/null | awk '{print $NF}');do
-						${svncmd} ${svnoptions} del --force $badfile &>/dev/null
-					done
-				fi
-				echo "svn commit ${workingdir}"
-				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
-				echo
+			# 添加到 SVN
+			echo "svn add ${workingdir}"
+			until ${svncmd} ${svnoptions} add --force ${workingdir} 2>&1;do
+				local workingdir=${workingdir%/*}	# 父目录
+				[ "${workingdir}" = "${webroot}" ] && break
 			done
-		else
-			for item in ${flists};do
-				local workingdir="${webroot}/${project_code}${item}"
-				echo "svn add ${workingdir}"
-				until ${svncmd} ${svnoptions} add --force ${workingdir} 2>&1;do
-					local workingdir=${workingdir%/*}
-					[ "${workingdir}" = "${webroot}" ] && break
+			echo
+
+			# 检查一下,以防某些临时文件被 svn add
+			if ${svncmd} ${svnoptions} st ${workingdir} | grep -q -e '^!';then
+				for badfile in $(${svncmd} ${svnoptions} st ${workingdir} | grep -e '^!' 2>/dev/null | awk '{print $NF}');do
+					${svncmd} ${svnoptions} del --force $badfile &>/dev/null	# 删除已经不存在的文件,避免提交失败
 				done
-				echo
-				echo "svn commit ${workingdir}"
-				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
-				echo
+			fi
+
+			# 提交到 SVN
+			echo "svn commit ${workingdir}"
+			while ${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1 \
+				| grep -q -e 'svn: E195022.*is locked in another working copy' ; do
+				${svncmd} ${svnoptions} unlock --force \
+				$(${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1 \
+				| grep -q -e 'svn: E195022.*is locked in another working copy' \
+				| awk -F"'" '{print $2}')
 			done
-		fi
+			${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1	# 如果有其他报错,这里抛出来
+			echo
+		done
 	done
 }
 
