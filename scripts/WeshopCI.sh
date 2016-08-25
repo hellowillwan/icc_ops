@@ -51,12 +51,12 @@ update_to_all_projects() {
 				${svncmd} ${svnoptions} up ${webroot}/${project}${item%/*}/
 			else
 				mkdir -p ${webroot}/${project}${item%/*}/ #&>/dev/null
-				${svncmd} ${svnoptions} --force add ${webroot}/${project}${item%/*}/
+				${svncmd} ${svnoptions} add --force ${webroot}/${project}${item%/*}/
 			fi
 			# 同步 item
 			rsync -avc --exclude='.svn' ${weshop_dir}${item} ${webroot}/${project}${item%/*}/
 			# 提交 item
-			${svncmd} ${svnoptions} --force add ${webroot}/${project}${item}
+			${svncmd} ${svnoptions} add --force ${webroot}/${project}${item}
 			${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${webroot}/${project}${item}
 			echo
 		done
@@ -159,9 +159,19 @@ pack_and_commit_svn() {
 				
 				# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
 				rm ${workingdir}/node_modules -rf
+				# 等待一段时间 打包后清理临时文件可能需要一点时间
+				sleep 5
+
+				# 添加并提交到 SVN
 				echo "svn add ${workingdir}"
-				${svncmd} ${svnoptions} --force add ${workingdir} 2>&1
+				${svncmd} ${svnoptions} add --force ${workingdir} 2>&1
 				echo
+				# 检查一下,以防某些临时文件被 svn add
+				if ${svncmd} ${svnoptions} st ${workingdir} | grep -q -e '^!';then
+					for badfile in $(${svncmd} ${svnoptions} st ${workingdir} | grep -e '^!' 2>/dev/null | awk '{print $NF}');do
+						${svncmd} ${svnoptions} del --force $badfile &>/dev/null
+					done
+				fi
 				echo "svn commit ${workingdir}"
 				${svncmd} ${svnoptions} commit -m"update by weshop ci_tool ${message}" ${workingdir} 2>&1
 				echo
@@ -170,7 +180,7 @@ pack_and_commit_svn() {
 			for item in ${flists};do
 				local workingdir="${webroot}/${project_code}${item}"
 				echo "svn add ${workingdir}"
-				until ${svncmd} ${svnoptions} --force add ${workingdir} 2>&1;do
+				until ${svncmd} ${svnoptions} add --force ${workingdir} 2>&1;do
 					local workingdir=${workingdir%/*}
 					[ "${workingdir}" = "${webroot}" ] && break
 				done
