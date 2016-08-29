@@ -104,7 +104,7 @@ pull_weshop_prod_for_child_projects() {
 			local dst_item="${webroot}/${project_code}${item%/*}/"
 
 			# 确保父目录存在
-			test -d ${dst_item} || mkitem -p ${dst_item}
+			test -d ${dst_item} || mkdir -p ${dst_item}
 
 			# 拉取操作
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
