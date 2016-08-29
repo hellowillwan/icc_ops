@@ -35,7 +35,7 @@ server {
 
 	location ~* \.(jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|ogv|avi|wma|wmv|ttf|eot|otf|woff|svg|txt|json|html)$ {
 		# 替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
-		sub_filter '<base href="/' '<base href="http://PROJECT_DOMAIN_STATIC/';
+		sub_filter '<base href="/' '<base href="http://PROJECT_STATIC_DOMAIN/';
 		sub_filter_last_modified on;
 
 		# 跨域相关
