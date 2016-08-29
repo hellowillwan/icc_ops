@@ -169,7 +169,7 @@ add_project ()
 		project_domain_backup="${project_code}.icatholiccloud.com ${project_code}.icatholiccloud.net ${project_code}.icatholiccloud.cn"
 		# 配置模板中需要替换的变量
 		PROJECT_DOMAIN="$project_domain $project_domain_static $project_domain_backup"
-		PROJECT_DOMAIN_STATIC="${project_domain_static}"
+		PROJECT_STATIC_DOMAIN="${project_domain_static}"
 		CACHE_ZONE_NAME="$project_domain"
 
 		#生成项目app配置
@@ -195,7 +195,7 @@ add_project ()
 		>> $proxy_cache_cfg
 		#proxy_cfg
 		cat $proxy_cfg_t | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
-						-e "s/PROJECT_DOMAIN_STATIC/$PROJECT_DOMAIN_STATIC/g" \
+						-e "s/PROJECT_STATIC_DOMAIN/$PROJECT_STATIC_DOMAIN/g" \
 						-e "s/CACHE_ZONE_NAME/$CACHE_ZONE_NAME/g" > $proxy_cfg_path$subpath$project_code.conf
 		if [ $? -gt 0 ];then
 			#proxy_cfg创建失败,返回
@@ -209,6 +209,24 @@ add_project ()
 		#/usr/local/sbin/RsyncCfg.sh
 		return 0
 	fi
+}
+
+recreate_project_cfgs() {
+	if [ -z "$1" ];then
+		echo "missing parameter,return code:1,Usage: ${FUNCNAME[0]} project_code"
+		return 1
+	fi
+
+	local project_code="$1"
+
+	find /home/proxy_nginx_conf/ -iname "${project_code}*" |xargs -i mv {} /home/backup/old_cfgs/proxy
+	find /home/app_nginx_conf/ -iname "${project_code}*" |xargs -i mv {} /home/backup/old_cfgs/app
+	add_project ${project_code}
+	for domain_name in $(grep -P -e "^[ |\t]*server_name[ |\t]" /home/backup/old_cfgs/proxy/${project_code}.conf \
+		| sed 's/[ |\t]*server_name[ |\t]*//;s/;$//') ;do
+		add_hostname ${project_code} ${domain_name}
+	done
+	add_project "${project_code}demo"
 }
 
 sync_demo_prod ()
@@ -263,7 +281,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	
 	case "$cmd" in
 	
-	get_project_status|add_project|dir_tree)
+	get_project_status|add_project|recreate_project_cfgs|dir_tree)
 		$cmd $p3
 		logger Deployer $p1 $p2 $p3 return code:$?
 		;;
