@@ -170,9 +170,10 @@ pack_and_commit_svn() {
 				local workingdir=${workingdir%/*}	# 父目录
 				[ "${workingdir}" = "${webroot}" ] && break
 			done
+			local workingdir="${webroot}/${project_code}${item}"	# 还原
 			echo
 
-			# 检查一下,以防某些临时文件被 svn add
+			# 检查一下,以防某些临时文件被 svn add,造成 commit 失败,报 E155010 错
 			if ${svncmd} ${svnoptions} st ${workingdir} | grep -q -e '^!';then
 				for badfile in $(${svncmd} ${svnoptions} st ${workingdir} | grep -e '^!' 2>/dev/null | awk '{print $NF}');do
 					${svncmd} ${svnoptions} del --force $badfile &>/dev/null	# 删除已经不存在的文件,避免提交失败
