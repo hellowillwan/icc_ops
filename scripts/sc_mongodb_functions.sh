@@ -414,10 +414,14 @@ mongo_sync () {
 	if [ $src_records_number -gt 0 ] && [ -s "${WORKINGDIR}/${SRC_DB}/${SRC_COLLECTION}.bson" ] ; then
 		# 如果bson文件大于零,即集合有数据,进行导入目的环境.导入操作可能会失败,可能需要导入多次,这里设置最多导入2次 or 两边记录数相等
 		local restore_times=0	# 计数器
-		local dst_records_number=0
-		until [ $restore_times -ge 2 ] || [ $dst_records_number -eq $src_records_number ] ;do
-			/home/60000/bin/mongorestore --drop -h ${DST_HOST} --port ${DST_PORT} \
-			-d "${DST_DB}" -c "${DST_COLLECTION}" ${WORKINGDIR}/"${SRC_DB}"/${SRC_COLLECTION}.bson &> /dev/null
+		until [ $restore_times -ge 5 ] || [ ${diff_number:-999} -le 100 ] ;do
+			# 方案1: 直接 restore
+			#/home/60000/bin/mongorestore --drop -h ${DST_HOST} --port ${DST_PORT} \
+			#-d "${DST_DB}" -c "${DST_COLLECTION}" ${WORKINGDIR}/"${SRC_DB}"/${SRC_COLLECTION}.bson &> /dev/null
+			# 方案2: 让线下去拉取& restore
+			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
+			echo $localkey pull_restore ${DST_DB} ${DST_COLLECTION} | /usr/bin/gearman -p 4731 -f CommonWorker_192.168.5.41 &>/dev/null
+
 			if [ "$?" -eq 0 ];then
 				local restore_result="成功"
 				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restore_ok" >> $STATS_FILE
@@ -428,6 +432,7 @@ mongo_sync () {
 			local dst_records_number=$(echo "db.getCollection('${DST_COLLECTION}').count()" \
 				| /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DST_DB} 2>/dev/null \
 				| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
+			local diff_number=$((${dst_records_number:-0}-$src_records_number));local diff_number=${diff_number#-}
 			local restore_times=$((${restore_times}+1))	# 计数器加1
 		done
 
@@ -504,6 +509,38 @@ mongo_copy () {
 		#bson文件为空
 		echo "源集合不存在或为空,无法复制"
 	fi
+}
+
+pull_restore() {
+	# 拉取 bson 并恢复
+	if [ -z "$2" ];then
+		echo "Parameter missing,usage: ${FUNCNAME[0]} db_name collection_name"
+		return 1
+	else
+		local DST_DB="$1"
+		local DST_COLLECTION="$2"
+	fi
+
+	if [ "${DST_DB}" = "bda" ];then
+		local SRC_DB='bda'
+		local DST_HOST='10.0.0.30'
+		local DST_PORT='57017'
+	#elif [ "${DST_DB}" = "ICCv1" -o "${DST_DB}" = "umav3" -o "${DST_DB}" = "mapreduce" -o "${DST_DB}" = "test" ];then
+	else
+		echo "bad DST_DB"
+		return 2
+	fi
+
+	# pull
+	local WORKINGDIR="/tmp/pull_restore/${SRC_DB}/" ; mkdir -p ${WORKINGDIR} &>/dev/null
+	/usr/bin/rsync -avz -P -e 'ssh -i /home/wanlong/.ssh/id_rsa -p 8389' wanlong@10.0.0.200:/tmp/mongo_sync/${SRC_DB}/${DST_COLLECTION}* ${WORKINGDIR} 2>&1
+	local bson_file="${WORKINGDIR}${DST_COLLECTION}.bson"
+	echo
+
+	# restore
+	/home/60000/bin/mongorestore --drop -h "${DST_HOST}" --port "${DST_PORT}" -d "${DST_DB}" -c "${DST_COLLECTION}" "${bson_file}" 2>&1
+	local restore_ret=$?
+	return $restore_ret
 }
 
 #mongo_query ICCv1 545aee0948961931768b4a6f

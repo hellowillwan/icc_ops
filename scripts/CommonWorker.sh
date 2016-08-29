@@ -335,7 +335,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
 		;;
-	mongo_query|mongo_sync|check_mongo_sync)
+	mongo_query|mongo_sync|check_mongo_sync|pull_restore)
 		source /usr/local/sbin/sc_mongodb_functions.sh
 		#mongo_query	db col query projection sort limit skip
 		#mongo_sync	download|upload db_name_for_sync collections_for_sync
