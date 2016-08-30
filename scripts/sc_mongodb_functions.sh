@@ -531,7 +531,7 @@ pull_restore() {
 		return 2
 	fi
 
-	# pull
+	# pull (rsync with ssh may need '-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' options #How to disable SSH host key checking#)
 	local WORKINGDIR="/tmp/pull_restore/${SRC_DB}/" ; mkdir -p ${WORKINGDIR} &>/dev/null
 	/usr/bin/rsync -avz -P -e 'ssh -i /home/wanlong/.ssh/id_rsa -p 8389' wanlong@10.0.0.200:/tmp/mongo_sync/${SRC_DB}/${DST_COLLECTION}* ${WORKINGDIR} 2>&1
 	local bson_file="${WORKINGDIR}${DST_COLLECTION}.bson"
