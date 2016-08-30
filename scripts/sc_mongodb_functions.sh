@@ -361,7 +361,7 @@ mongo_sync () {
 		#fi
 	fi
 
-	if [ ${DIRECTION} = 'download' ];then
+	if [ "${DIRECTION}" = 'download' ];then
 		SRC_ENV='产生'
 		SRC_HOST='10.0.0.31'
 		SRC_PORT=57017
@@ -377,7 +377,7 @@ mongo_sync () {
 			DST_HOST='10.0.0.200'
 			DST_PORT=38017
 		fi
-	elif [ ${DIRECTION} = 'upload' ];then
+	elif [ "${DIRECTION}" = 'upload' ];then
 		SRC_ENV='dev'
 		SRC_HOST='10.0.0.200'
 		SRC_PORT=37017
@@ -396,17 +396,18 @@ mongo_sync () {
 	#dump from SRC_HOST:SRC_PORT/SRC_DB SRC_COLLECTION
 	[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dumping" >> $STATS_FILE
 	/home/60000/bin/mongodump -h ${SRC_HOST} --port ${SRC_PORT} -d "${SRC_DB}" -c "${SRC_COLLECTION}" -o $WORKINGDIR &> /dev/null
-	if [ "$?" -eq 0 ];then
-		local dump_result="成功"
-		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dump_ok" >> $STATS_FILE
-	else
-		local dump_result="失败"
-		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#dump_fail" >> $STATS_FILE
-	fi
+	local dump_ret=$?
 	local src_records_number=$(echo "db.getCollection('${SRC_COLLECTION}').count()" \
 		| /home/60000/bin/mongo ${SRC_HOST}:${SRC_PORT}/${SRC_DB} 2>/dev/null \
 		| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
-	
+	if [ "${dump_ret}" -eq 0 ];then
+		local dump_result="成功"
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#${src_records_number}#dump_ok" >> $STATS_FILE
+	else
+		local dump_result="失败"
+		[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${SRC_DB}#${SRC_COLLECTION}#${src_records_number}#dump_fail" >> $STATS_FILE
+	fi
+
 	echo "导出 ${SRC_ENV} 环境 ${SRC_DB}.${SRC_COLLECTION} : ${dump_result} 文档数量 : $src_records_number"
 
 	#restore to DST_HOST:DST_PORT/DST_DB DST_COLLECTION
@@ -421,19 +422,19 @@ mongo_sync () {
 			# 方案2: 让线下去拉取& restore
 			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
 			echo $localkey pull_restore ${DST_DB} ${DST_COLLECTION} | /usr/bin/gearman -p 4731 -f CommonWorker_192.168.5.41 &>/dev/null
-
-			if [ "$?" -eq 0 ];then
-				local restore_result="成功"
-				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restore_ok" >> $STATS_FILE
-			else
-				local restore_result="失败"
-				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#restore_fail" >> $STATS_FILE
-			fi
+			local restore_ret=$?
 			local dst_records_number=$(echo "db.getCollection('${DST_COLLECTION}').count()" \
 				| /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DST_DB} 2>/dev/null \
 				| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
 			local diff_number=$((${dst_records_number:-0}-$src_records_number));local diff_number=${diff_number#-}
 			local restore_times=$((${restore_times}+1))	# 计数器加1
+			if [ "${restore_ret}" -eq 0 ];then
+				local restore_result="成功"
+				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#${dst_records_number}#restore_ok" >> $STATS_FILE
+			else
+				local restore_result="失败"
+				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#${dst_records_number}#restore_fail" >> $STATS_FILE
+			fi
 		done
 
 		echo -e "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : ${restore_result} 文档数量 : $dst_records_number\n"
