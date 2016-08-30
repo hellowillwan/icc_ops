@@ -21,10 +21,12 @@ resync_connector() {
 
 	# Generate a mongo-connector timestamp file
 	ts_file=$(grep -A 5 -P "^[ |\t]*\[program:${program_name}\]" ${supervisorcfg} | grep '^command'|tr ' ' '\n'|grep -e 'oplog.*timestamp')
+	test -f ${ts_file} || echo "Error: ts_file ${ts_file} not exist."	# 检查 timestamp file
 	# stop mongo-connector
 	/usr/bin/supervisorctl -c ${supervisorcfg} stop "${program_name}:${program_name}0" &>/dev/null
 	/usr/bin/supervisorctl -c ${supervisorcfg} stop "${program_name}:${program_name}0" &>/dev/null
-	:>${ts_file}	# 清空 然后启动 重新产生新的 timestamp file
+	:>${ts_file} ; :>${ts_file}	# 清空 然后启动 重新产生新的 timestamp file
+	test -s ${ts_file} && echo "Error: ts_file ${ts_file} not empty."	# 检查 timestamp file
 	/usr/bin/supervisorctl -c ${supervisorcfg} start "${program_name}:${program_name}0" &>/dev/null
 	sleep 30
 
