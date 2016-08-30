@@ -118,8 +118,45 @@ pull_weshop_prod_for_child_projects() {
 	done
 }
 
-# 为各个项目编译打包(webpack m2),并提交到项目SVN仓库
-pack_and_commit_svn() {
+# 为各个项目编译打包(webpack m2)
+pack_ui() {
+	if [ -z "$1" ];then
+		return 1
+	fi
+	local projects="$1"
+	local project_list=${weshop_ui_enabled_projects}
+	local flists="$( cat ${weshop_ui_filelist} )"
+
+	for project_code in ${projects};do
+		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
+		for item in ${flists};do
+			local workingdir="${webroot}/${project_code}${item}"
+			# 打包前端文件
+			echo "pack_ui ${workingdir}"
+			if [ ! -d ${workingdir} ];then
+				echo "dir: ${workingdir} not exits."
+				continue
+			fi
+	
+			# 删除项目 ui 目录下的 node_modules,并链接到全局目录
+			rm ${workingdir}/node_modules -rf
+			ln -s /var/lib/node_modules ${workingdir}/
+			# 更新
+			# ${svncmd} ${svnoptions} up ${workingdir}
+			# 打包
+			( cd ${workingdir} ; gulp pro )
+			echo
+			
+			# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
+			rm ${workingdir}/node_modules -rf
+			# 等待一段时间 打包后清理临时文件可能需要一点时间
+			sleep 5
+		done
+	done
+}
+
+# 提交到项目SVN仓库
+commit_svn() {
 	if [ -z "$2" ];then
 		return 1
 	fi
@@ -141,36 +178,14 @@ pack_and_commit_svn() {
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		for item in ${flists};do
 			local workingdir="${webroot}/${project_code}${item}"
-			# 打包前端文件
-			if [ "${type}" = 'ui' ];then
-				echo "pack_ui ${workingdir}"
-				if [ ! -d ${workingdir} ];then
-					echo "dir: ${workingdir} not exits."
-					continue
-				fi
-		
-				# 删除项目 ui 目录下的 node_modules,并链接到全局目录
-				rm ${workingdir}/node_modules -rf
-				ln -s /var/lib/node_modules ${workingdir}/
-				# 更新
-				# ${svncmd} ${svnoptions} up ${workingdir}
-				# 打包
-				( cd ${workingdir} ; gulp pro )
-				echo
-				
-				# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
-				rm ${workingdir}/node_modules -rf
-				# 等待一段时间 打包后清理临时文件可能需要一点时间
-				sleep 5
-			fi
-
 			# 添加到 SVN
 			echo "svn add ${workingdir}"
 			until ${svncmd} ${svnoptions} add --force ${workingdir} 2>&1;do
 				local workingdir=${workingdir%/*}	# 父目录
 				[ "${workingdir}" = "${webroot}" ] && break
 			done
-			local workingdir="${webroot}/${project_code}${item}"	# 还原
+			local workingdir_fullpath="${webroot}/${project_code}${item}"    # 还原,用于记录日志
+			local workingdir="${webroot}/${project_code}/$(echo ${item} | cut -d '/' -f 2)"	# 还原到第一级目录,用于提交
 			echo
 
 			# 检查一下,以防某些临时文件被 svn add,造成 commit 失败,报 E155010 错
@@ -181,7 +196,7 @@ pack_and_commit_svn() {
 			fi
 
 			# 提交到 SVN
-			echo "svn commit ${workingdir}"
+			echo "svn commit ${workingdir_fullpath}"
 			while ${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1 \
 				| grep -q -e 'svn: E195022.*is locked in another working copy' ; do
 				${svncmd} ${svnoptions} unlock --force \
@@ -263,13 +278,16 @@ dev2demo() {
 		for item in ${flists};do
 			echo "sync to demo ${project_code} ${item}"
 			# 发布到demo
-			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
+			until /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
 			--blocking-io \
 			--exclude='.svn' \
-			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/ 2>&1
-			echo
+			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/ 2>&1 ;do
+				echo
+				local item=${item%/*}       # 父目录
+				[ "${item}" = "/" ] && break
+			done
 			# 分发到所有节点
 			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
 			echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200 -b
@@ -296,11 +314,14 @@ weshop_syncto_prod_hook() {
 		echo "从线上 weshop 正式环境拉取 ui 相关目录" >> ${log_file}
 			pull_weshop_prod_for_child_projects ui $project >> ${log_file}  2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "打包 ui 目录 并提交到项目 $project SVN" >> ${log_file}
-			pack_and_commit_svn ui $project >> ${log_file} 2>&1
+		echo "打包 ui 目录 $project SVN" >> ${log_file}
+			pack_ui $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
 		echo "发布项目 $project 到 demo 环境" >> ${log_file}
 			dev2demo ui $project >> ${log_file} 2>&1
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
+		echo "提交 ui 目录到项目 $project SVN" >> ${log_file}
+			commit_svn ui $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 		# 压缩日志文件
 		gzip $log_file ; local log_file="${log_file}.gz"
@@ -322,11 +343,11 @@ weshop_syncto_prod_hook() {
 		echo "从线上 weshop 正式环境拉取 php 相关目录" >> ${log_file}
 			pull_weshop_prod_for_child_projects php $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "打包 php 目录 并提交到项目 $project SVN" >> ${log_file}
-			pack_and_commit_svn php $project >> ${log_file} 2>&1
-		echo ++++++++++++++++++++++++++++++ >> ${log_file}
 		echo "发布项目 $project 到 demo 环境" >> ${log_file}
 			dev2demo php $project >> ${log_file} 2>&1
+		echo ++++++++++++++++++++++++++++++ >> ${log_file}
+		echo "提交 php 目录到项目 $project SVN" >> ${log_file}
+			commit_svn php $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 		# 压缩日志文件
 		gzip $log_file ; local log_file="${log_file}.gz"
