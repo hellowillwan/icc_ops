@@ -539,7 +539,8 @@ pull_restore() {
 	echo
 
 	# restore
-	/home/60000/bin/mongorestore --drop -h "${DST_HOST}" --port "${DST_PORT}" -d "${DST_DB}" -c "${DST_COLLECTION}" "${bson_file}" 2>&1
+	/home/60000/bin/mongorestore --drop --writeConcern '{w: 1, wtimeout: 500}' \
+	-h "${DST_HOST}" --port "${DST_PORT}" -d "${DST_DB}" -c "${DST_COLLECTION}" "${bson_file}" 2>&1
 	local restore_ret=$?
 	return $restore_ret
 }
