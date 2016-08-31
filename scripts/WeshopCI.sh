@@ -88,7 +88,7 @@ pull_weshop_prod_for_child_projects() {
 	for project_code in ${projects} ;do
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		for item in ${flists};do
-			echo "pull_weshop_prod_for_child_projects ${project_code} $item"
+			echo "${FUNCNAME[0]} ${project_code} $item"
 			# 确定排除参数
 			if [ "${type}" = 'ui' -a -d ${webroot}/${project_code}${item} ] ;then
 				# 如果该项目 存在此目录 并且 是操作 ui 相关目录,则排除 diff 目录进行同步
@@ -132,7 +132,7 @@ pack_ui() {
 		for item in ${flists};do
 			local workingdir="${webroot}/${project_code}${item}"
 			# 打包前端文件
-			echo "pack_ui ${workingdir}"
+			echo "${FUNCNAME[0]} ${workingdir}"
 			if [ ! -d ${workingdir} ];then
 				echo "dir: ${workingdir} not exits."
 				continue
@@ -178,8 +178,8 @@ commit_svn() {
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		for item in ${flists};do
 			local workingdir="${webroot}/${project_code}${item}"
-			# 添加到 SVN
-			echo "svn add ${workingdir}"
+			echo "${FUNCNAME[0]} ${workingdir}"
+			# 添加到 SVN (循环是为了避免父目录未被添加造成的报错)
 			until ${svncmd} ${svnoptions} add --force ${workingdir} 2>&1;do
 				local workingdir=${workingdir%/*}	# 父目录
 				[ "${workingdir}" = "${webroot}" ] && break
@@ -272,12 +272,13 @@ dev2demo() {
 		return 1
 	fi
 
-	# 指定目录
+	# 指定项目
 	for project_code in ${projects} ;do
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
+		# 指定文件/目录
 		for item in ${flists};do
-			echo "sync to demo ${project_code} ${item}"
-			# 发布到demo
+			echo "${FUNCNAME[0]} ${project_code} ${item}"
+			# 发布到demo (循环是为避免父目录不存在造成的报错)
 			until /bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
 			-vzrpt \
@@ -286,7 +287,7 @@ dev2demo() {
 			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/ 2>&1 ;do
 				echo
 				local item=${item%/*}       # 父目录
-				[ "${item}" = "/" ] && break
+				[ -z "${item}" ] && break
 			done
 			# 分发到所有节点
 			localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
@@ -311,16 +312,16 @@ weshop_syncto_prod_hook() {
 		local log_file="/var/log/weshop_syncto_prod_hook.${project}.ui.$(date +%s_%N).log"
 		echo "$(date) 项目: $project ui" >> ${log_file}
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "从线上 weshop 正式环境拉取 ui 相关目录" >> ${log_file}
+		echo "拉取 ui 相关目录" >> ${log_file}
 			pull_weshop_prod_for_child_projects ui $project >> ${log_file}  2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "打包 ui 目录 $project SVN" >> ${log_file}
+		echo "打包 ui 相关目录" >> ${log_file}
 			pack_ui $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "发布项目 $project 到 demo 环境" >> ${log_file}
+		echo "发布 ui 相关目录到项目 demo 环境" >> ${log_file}
 			dev2demo ui $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "提交 ui 目录到项目 $project SVN" >> ${log_file}
+		echo "提交 ui 相关目录到项目 SVN" >> ${log_file}
 			commit_svn ui $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 		# 压缩日志文件
@@ -340,13 +341,13 @@ weshop_syncto_prod_hook() {
 		local log_file="/var/log/weshop_syncto_prod_hook.${project}.php.$(date +%s_%N).log"
 		echo "$(date) 项目: $project php" >> ${log_file}
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "从线上 weshop 正式环境拉取 php 相关目录" >> ${log_file}
+		echo "拉取 php 相关目录" >> ${log_file}
 			pull_weshop_prod_for_child_projects php $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "发布项目 $project 到 demo 环境" >> ${log_file}
+		echo "发布 php 相关目录到项目 demo 环境" >> ${log_file}
 			dev2demo php $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "提交 php 目录到项目 $project SVN" >> ${log_file}
+		echo "提交 php 相关目录到项目 SVN" >> ${log_file}
 			commit_svn php $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 		# 压缩日志文件
