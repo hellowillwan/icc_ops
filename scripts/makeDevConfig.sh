@@ -90,6 +90,9 @@ cp -f /home/Backup/Docker_build/tmp_vhost/*.conf ${CFG_WORKING_DIR}/app_nginx_co
 # 修改 php session.save_path memcached 地址
 sed -i 's/10.0.0.20:1121[1-2]/192.168.5.41:11211/g' \
 	${CFG_WORKING_DIR}/app_php_conf/php-*/php-fpm.d/www.conf
+# 修改 php session.gc_maxlifetime session过期时间
+sed -i '$a php_value[session.gc_maxlifetime] = 86400' \
+	${CFG_WORKING_DIR}/app_php_conf/php-*/php-fpm.d/www.conf
 /usr/bin/logger "${SCRIPT_NAME} 编辑Dev环境 app php config 完成"
 
 
