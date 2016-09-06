@@ -27,6 +27,8 @@ rsync --delete -a -e ssh 211.152.60.33:/home/proxy*_conf ${CFG_WORKING_DIR}/
 # 注释掉demo和alias目录的配置
 sed -i -e 's/\(include.*demo.*conf;\)/#\1/' ${CFG_WORKING_DIR}/app_nginx_conf/nginx.conf
 sed -i -e 's/\(include.*alias.*conf;\)/#\1/' ${CFG_WORKING_DIR}/app_nginx_conf/nginx.conf
+# 修改 app nginx fastcgi_.*_timeout 到10分钟 
+sed -i -e 's#^\([ |\t]\+fastcgi_.*_timeout[ |\t]\+\).*#\1605s;#' ${CFG_WORKING_DIR}/app_nginx_conf/nginx.conf
 # 设置环境参数
 sed -i 's/production/testing/' ${CFG_WORKING_DIR}/app_nginx_conf/fastcgi_params_production
 # 传递给 php 的环境变量
@@ -92,6 +94,9 @@ sed -i 's/10.0.0.20:1121[1-2]/192.168.5.41:11211/g' \
 	${CFG_WORKING_DIR}/app_php_conf/php-*/php-fpm.d/www.conf
 # 修改 php session.gc_maxlifetime session过期时间
 sed -i '$a php_value[session.gc_maxlifetime] = 86400' \
+	${CFG_WORKING_DIR}/app_php_conf/php-*/php-fpm.d/www.conf
+# 修改 php-fpm request_terminate_timeout 为10分钟 
+sed -i '/^[ |\t]*request_terminate_timeout/c\request_terminate_timeout = 600' \
 	${CFG_WORKING_DIR}/app_php_conf/php-*/php-fpm.d/www.conf
 /usr/bin/logger "${SCRIPT_NAME} 编辑Dev环境 app php config 完成"
 
