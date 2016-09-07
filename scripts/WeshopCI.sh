@@ -143,7 +143,7 @@ pack_ui() {
 			ln -s /var/lib/node_modules ${workingdir}/
 			# 更新
 			# ${svncmd} ${svnoptions} up ${workingdir}
-			# 打包
+			# 打包 (yum install nodejs ; npm install -g gulp)
 			( cd ${workingdir} ; gulp pro )
 			echo
 			
