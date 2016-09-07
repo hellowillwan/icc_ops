@@ -390,9 +390,10 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 	sendemail)
 		sendemail "$p3" "$p4" "$p5" "$p6"
 		;;
-	diff_weshopcode)
-		source /usr/local/sbin/weshopci.sh
-		diff_weshopcode $p3 $p4
+	diff_weshopcode|distr_weshopcode)
+		source /usr/local/sbin/sc_weshopci_functions.sh
+		$cmd $p3 $p4
+		logger CommonWorker $p1 $p2 $p3
 		;;
 	test_timeout)
 		sleep 1200
