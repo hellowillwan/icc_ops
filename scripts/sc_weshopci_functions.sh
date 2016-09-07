@@ -11,7 +11,6 @@ weshop_php_enabled_projects='/var/lib/weshop_php_enabled_projects'	# 开启微�
 weshop_php_filelist='/var/lib/weshop_php_filelist'			# 需要更新的微商 php 文件/目录,一行一个
 webroot='/home/webs'				# WebRoot目录
 weshop_dir="${webroot}/weshop"			# weshop 项目目录
-rsynccmd="/usr/bin/rsync -vzrpt --blocking-io --exclude='.svn' --exclude='.git' --exclude='*.log' --exclude='.buildpath' --exclude='.project' --exclude='.gitignore' --exclude='/cache/*' --exclude='/logs/*' "
 
 # 函数
 #
@@ -84,11 +83,11 @@ pull_weshop_prod_for_child_projects() {
 			local dst_item="${webroot}/${project_code}${item%/*}/"
 
 			# 确保父目录存在
-			test -d ${dst_item} || mkdir -p ${dst_item}
+			test -d ${dst_item} || ( mkdir -p ${dst_item} ; chown -R ftpuser:ftpuser ${dst_item} &>/dev/null )
 
 			# 拉取操作
 			/usr/bin/rsync \
-			-vzrpt \
+			-vzrogpt \
 			--blocking-io \
 			--exclude='.svn' ${is_exclude_diff} \
 			${src_item} ${dst_item} #2>&1
@@ -129,6 +128,8 @@ pack_ui() {
 			rm ${workingdir}/node_modules -rf
 			# 等待一段时间 打包后清理临时文件可能需要一点时间
 			#sleep 5
+			# 修改目录权限
+			chown -R ftpuser:ftpuser ${workingdir} &>/dev/null
 		done
 	done
 }
@@ -169,6 +170,7 @@ distr_weshopcode() {
 			#sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
 		done
 		# 分发到所有 app 机器
+		chown -R ftpuser:ftpuser ${webroot}/${project}demo &>/dev/null
 		echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b
 	done
 }
