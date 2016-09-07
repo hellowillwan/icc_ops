@@ -103,15 +103,16 @@ sync_individually() {
 	#	fi
 	#done
 
+	# comment out at 20160907
 	# 微商城 | 直播 项目同步-分发 触发操作
 	#
-	if [ "${subdir}" = 'weshop' ] ;then
+	#if [ "${subdir}" = 'weshop' ] ;then
 	#	# 触发相关项目分发
 	#	for proj in $(cat /var/lib/weshop_enabled_hosts |grep -v -e 'demo$');do
 	#		echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
 	#	done
 		# 触发办公室内网 host48 去做一系列操作
-		echo $localkey weshop_syncto_prod_hook | /usr/bin/gearman -h 10.0.0.200 -p 4731 -f "CommonWorker_192.168.5.48" -b
+		#echo $localkey weshop_syncto_prod_hook | /usr/bin/gearman -h 10.0.0.200 -p 4731 -f "CommonWorker_192.168.5.48" -b
 	#elif [ "${subdir}" = 'weshopdemo' ] ;then
 	#	# 触发相关项目分发
 	#	for proj in $(cat /var/lib/weshop_enabled_hosts|grep -e 'demo$');do
@@ -127,7 +128,7 @@ sync_individually() {
 	#	for proj in $(cat /var/lib/zhibo_enabled_hosts|grep -e 'demo$');do
 	#		echo $localkey sync_a_project_code  $proj | /usr/bin/gearman -h 10.0.0.200 -p 4730 -f "CommonWorker_10.0.0.200" -b
 	#	done
-	fi
+	#fi
 
 
 
