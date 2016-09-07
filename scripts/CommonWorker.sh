@@ -243,6 +243,7 @@ sync_demo_prod ()
 		--exclude='*.log' \
 		--exclude='/cache/*' \
 		--exclude='/logs/*' \
+		--exclude=node_modules \
 		"$1" "$2" 2>&1
 
 	ret=$?

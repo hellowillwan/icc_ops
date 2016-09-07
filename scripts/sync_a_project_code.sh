@@ -152,6 +152,7 @@ sync_individually() {
 		--exclude='.git' \
 		--exclude='*.log' \
 		--exclude='*/logs/*' \
+		--exclude=node_modules \
 		/home/webs/${subdir}/ \
 		${ip}::web/${subdir}/
 
