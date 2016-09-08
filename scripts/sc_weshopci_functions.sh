@@ -142,7 +142,7 @@ distr_weshopcode() {
 	else
 		local PROJECTS="$1"
 		if [ "${PROJECTS}" = '__ALL_PROJECTS__' ];then
-			local PROJECTS="$( cat ${weshop_php_enabled_projects} )"
+			local PROJECTS="$( cat ${weshop_php_enabled_projects} | grep -v '__ALL_PROJECTS__' )"
 		fi
 		#local ITEMS="$(echo $2 | base64 -d)"	# 不用这个文件列表因为没区分ui\php
 	fi
