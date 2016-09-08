@@ -109,7 +109,7 @@ pull_weshop_prod_for_child_projects() {
 			# 拉取操作
 			/bin/env USER='cutu5er' RSYNC_PASSWORD='1ccOper5' \
 			/usr/bin/rsync \
-			-vzrpt \
+			-zrpt \
 			--blocking-io \
 			--exclude='.svn' ${is_exclude_diff} \
 			211.152.60.33::${src_item} ${dst_item} 2>&1
@@ -150,7 +150,7 @@ pack_ui() {
 			# 删除项目 ui 目录下的 node_modules 准备提交 m2 到具体项目 svn 库
 			rm ${workingdir}/node_modules -rf
 			# 等待一段时间 打包后清理临时文件可能需要一点时间
-			sleep 5
+			#sleep 5
 		done
 	done
 }
@@ -170,6 +170,9 @@ commit_svn() {
 		#local projects="$( cat ${weshop_php_enabled_projects} )"
 		local project_list=${weshop_php_enabled_projects}
 		local flists="$( cat ${weshop_php_filelist} )"
+	elif [ "${type}" = 'phpandui' ];then
+		local project_list=${weshop_php_enabled_projects}
+		local flists="$( cat ${weshop_php_filelist} ${weshop_ui_filelist} )"
 	else
 		return 1
 	fi
@@ -207,6 +210,76 @@ commit_svn() {
 			${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1	# 如果有其他报错,这里抛出来
 			echo
 		done
+	done
+}
+
+# 提交到项目SVN仓库
+commit_svn_new() {
+	if [ -z "$2" ];then
+		return 1
+	fi
+	local type="$1"
+	local projects="$2"
+	if [ "${type}" = 'ui' ];then
+		#local projects="$( cat ${weshop_ui_enabled_projects} )"
+		local project_list=${weshop_ui_enabled_projects}
+		local flists="$( cat ${weshop_ui_filelist} )"
+	elif [ "${type}" = 'php' ];then
+		#local projects="$( cat ${weshop_php_enabled_projects} )"
+		local project_list=${weshop_php_enabled_projects}
+		local flists="$( cat ${weshop_php_filelist} )"
+	elif [ "${type}" = 'phpandui' ];then
+		local project_list=${weshop_php_enabled_projects}
+		local flists="$( cat ${weshop_php_filelist} ${weshop_ui_filelist} )"
+	else
+		return 1
+	fi
+
+	for project_code in ${projects};do
+		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
+		# 加锁屏蔽其他进程对同一个 workingdir 做 svn 操作
+		local lockfile="/var/lib/weshopchild_${project_code}.lock"
+		while test -f $lockfile ;do
+			echo "$lockfile exists,other svn operations are running.sleep for 60 secs..."
+			sleep 60
+		done
+		touch $lockfile
+		# 按文件列表逐条做 svn add
+		for item in ${flists};do
+			local workingdir="${webroot}/${project_code}${item}"
+			#echo "${FUNCNAME[0]} ${workingdir}"
+			# 添加到 SVN (循环是为了避免父目录未被添加造成的报错)
+			until echo "svn add ${workingdir}" && ${svncmd} ${svnoptions} add --force ${workingdir} 2>&1;do
+				local workingdir=${workingdir%/*}	# 父目录
+				[ "${workingdir}" = "${webroot}" ] && break
+			done
+			#local workingdir_fullpath="${webroot}/${project_code}${item}"    # 还原,用于记录日志
+			#local workingdir="${webroot}/${project_code}/$(echo ${item} | cut -d '/' -f 2)"	# 还原到第一级目录,用于提交
+			echo
+		done
+
+		# 检查一下整个项目目录 SVN 状态,以防某些临时文件被 svn add,造成 commit 失败,报 E155010 错
+		if ${svncmd} ${svnoptions} st ${webroot}/${project_code} | grep -q -e '^!';then
+			for badfile in $(${svncmd} ${svnoptions} st ${webroot}/${project_code} | grep -e '^!' 2>/dev/null | awk '{print $NF}');do
+				${svncmd} ${svnoptions} del --force $badfile &>/dev/null	# 删除已经不存在的文件,避免提交失败
+			done
+		fi
+
+		# 提交整个项目目录的所以变更到 SVN
+		echo "svn commit all"
+		while ${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${webroot}/${project_code} 2>&1 \
+			| grep -q -e 'svn: E195022.*is locked in another working copy' ; do
+			${svncmd} ${svnoptions} unlock --force \
+			$(${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${webroot}/${project_code} 2>&1 \
+			| grep -q -e 'svn: E195022.*is locked in another working copy' \
+			| awk -F"'" '{print $2}')
+		done
+		${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${webroot}/${project_code} 2>&1	# 如果有其他报错,这里抛出来
+		local commit_ret=$?
+		if [ ${commit_ret} -eq 0 ];then echo "SVN 提交成功.";else echo "SVN 提交失败,请联系管理员.";fi
+		# 解锁
+		test -f $lockfile && rm -f $lockfile
+		echo
 	done
 }
 
@@ -285,6 +358,7 @@ dev2demo() {
 			--blocking-io \
 			--exclude='.svn' \
 			${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*}/ 2>&1 ;do
+				echo "rsync ${webroot}/${project_code}${item} 211.152.60.33::web/${project_code}demo${item%/*} done."
 				echo
 				local item=${item%/*}       # 父目录
 				[ -z "${item}" ] && break
@@ -321,8 +395,8 @@ weshop_syncto_prod_hook() {
 		echo "发布 ui 相关目录到项目 demo 环境" >> ${log_file}
 			dev2demo ui $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "提交 ui 相关目录到项目 SVN" >> ${log_file}
-			commit_svn ui $project >> ${log_file} 2>&1
+	#	echo "提交 ui 相关目录到项目 SVN" >> ${log_file}
+	#		commit_svn ui $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 		# 压缩日志文件
 		gzip $log_file ; local log_file="${log_file}.gz"
@@ -347,8 +421,8 @@ weshop_syncto_prod_hook() {
 		echo "发布 php 相关目录到项目 demo 环境" >> ${log_file}
 			dev2demo php $project >> ${log_file} 2>&1
 		echo ++++++++++++++++++++++++++++++ >> ${log_file}
-		echo "提交 php 相关目录到项目 SVN" >> ${log_file}
-			commit_svn php $project >> ${log_file} 2>&1
+	#	echo "提交 php 相关目录到项目 SVN" >> ${log_file}
+	#		commit_svn php $project >> ${log_file} 2>&1
 		echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ >> ${log_file}
 		# 压缩日志文件
 		gzip $log_file ; local log_file="${log_file}.gz"
@@ -362,6 +436,54 @@ weshop_syncto_prod_hook() {
 		sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
 	done
 }
+
+# 提交 Weshop 子项目到 SVN 库
+commt_weshopchild() {
+	if [ -z "$1" ];then
+		echo 'parameters missing.'
+		return 1
+	else
+		local webroot='/home/webs/weshopchild'	# weshop  子项目专门用来提交 SVN 的workingdir,和 xyz 环境代码目录分开来
+		local PROJECTS="$1"
+		if [ "${PROJECTS}" = '__ALL_PROJECTS__' ];then
+			local PROJECTS="$( cat ${weshop_php_enabled_projects} | grep -v '__ALL_PROJECTS__' )"
+		fi
+	fi
+
+	for project in ${PROJECTS} ;do
+		local log_file="/var/log/weshop_distribute.${project}.$(date +%s_%N).log"
+		# 从 svn 仓库签出最新版到专门的workingdir
+		echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
+		echo "$(date) 从 SVN 仓库签出项目 $project 当前最新版本" | /usr/bin/tee -a ${log_file}
+		${svncmd} ${svnoptions} co https://192.168.5.40/svn/${project} ${webroot}/${project} 2>&1 | /usr/bin/tee -a ${log_file}
+		# 拉取 和 打包
+		for ftype in ui php;do
+			echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
+			echo "$(date) 拉取 weshop $ftype 相关代码到项目 $project dev环境" | /usr/bin/tee -a ${log_file}
+			pull_weshop_prod_for_child_projects $ftype $project 2>&1 | /usr/bin/tee -a ${log_file}
+			if [ "$ftype" = 'ui' ];then
+				echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
+				echo "$(date) 打包项目 $project dev环境 $ftype 相关代码" | /usr/bin/tee -a ${log_file}
+				pack_ui $project 2>&1 | /usr/bin/tee -a ${log_file}
+			fi
+		done
+		# 提交到项目 SVN 仓库
+		echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
+		echo "$(date) 提交项目 $project dev环境 代码到 SVN 仓库" | /usr/bin/tee -a ${log_file}
+		commit_svn_new phpandui $project 2>&1 | /usr/bin/tee -a ${log_file}
+		# 压缩日志文件
+		gzip $log_file ; local log_file="${log_file}.gz"
+		# 发邮件
+		local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,wendyguo@icatholic.net.cn,lihua@catholic.net.cn'
+		local to_list="${to_list},youngyang@icatholic.net.cn,willwan@icatholic.net.cn"
+		local to_list="${to_list},handersonguo@icatholic.net.cn,hansonzhang@icatholic.net.cn,zhuweiyou@icatholic.net.cn"
+		local subject="Syncing Weshop UI to project: ${project}'s SVN&DEMO has completed"
+		local content="$subject. check attachment for more details."
+		local file="$log_file"
+		#sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
+	done
+}
+
 
 
 # 发布到demo
