@@ -56,8 +56,7 @@ sendemail () {
 	/usr/local/sbin/sendemail.py -s smtp.icatholic.net.cn -f system.monitor@icatholic.net.cn -u system.monitor@icatholic.net.cn -p abc123 \
 		-t "$to_list" \
 		-S "$subject" \
-		-m "$content" ${attachment} | tee -a $SNDEMAIL_LOG 2>&1
-		#-F "$file" |tee -a $SNDEMAIL_LOG 2>&1
+		-m "$content" ${attachment} 2>&1 | tee -a $SNDEMAIL_LOG 2>&1
 	ret=$?
 	if [ $ret -eq 0 ] ;then
 		echo "$(date) : mail sent." | tee -a $SNDEMAIL_LOG
