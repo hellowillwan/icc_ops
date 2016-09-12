@@ -73,14 +73,22 @@ get_project_status ()
 	fi
 
 	project_code="$1"
-	project_domain="$project_code.umaman.com"
-	if grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $proxy_cfg_path && grep -e "keys_zone=$project_domain:" "$proxy_cache_cfg" && \
-		grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $app_cfg_path  
+	project_domain="${project_code}.umaman.com"
+	if grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $proxy_cfg_path \
+		&& grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $app_cfg_path
 	then
-		echo "$project_code was configured.return code:0"
+		echo -e "项目 [ ${project_code} ] 配置文件路径.\n"
+
+		grep -o -P -e "^[ |\t]*server_name[ |\t].*[^;]" \
+		$(grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $proxy_cfg_path) \
+		| sed 's/^[ |\t]*server_name[ |\t]\+//'
+		echo -e "项目 [ ${project_code} ] 绑定的域名.\n"
+
+		grep -e "keys_zone=$project_domain:" "$proxy_cache_cfg" \
+		&& echo "项目 [ ${project_code} ] 缓存配置."
 		return 0
 	else
-		echo "$project_code not configured.return code:1"
+		echo -e "项目 [ ${project_code} ] 配置文件未找到.\n"
 		return 1
 	fi
 }
