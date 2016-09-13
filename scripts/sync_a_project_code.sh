@@ -16,7 +16,7 @@ sync_individually() {
 	# 分发单个项目到所有apps
 	#
 	#usage: echo 72cf40a112e106565e2cbcb4cebec8a0 sync_a_project_code haoyadatestdemo | /usr/bin/gearman -h 211.152.60.33 -f CommonWorker_10.0.0.200
-	local APP_IP_ARY=('172.18.1.10' '172.18.1.11' '172.18.1.12' '172.18.1.13' '172.18.1.14' '172.18.1.24' )
+	local APP_IP_ARY=('172.18.1.10' '172.18.1.11' '172.18.1.12' '172.18.1.13' '172.18.1.14' )
 	local PXY_IP_ARY=('10.0.0.1' '10.0.0.2')
 	local parameter='-vrptl --delete --delete-excluded '
 
