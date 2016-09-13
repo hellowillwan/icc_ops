@@ -151,8 +151,12 @@ sync_individually() {
 		--blocking-io \
 		--exclude='.svn' \
 		--exclude='.git' \
+		--exclude='.buildpath' \
+		--exclude='.project' \
+		--exclude='.gitignore' \
 		--exclude='*.log' \
-		--exclude='*/logs/*' \
+		--exclude='/logs/*' \
+		--exclude='/cache/*' \
 		--exclude=node_modules \
 		/home/webs/${subdir}/ \
 		${ip}::web/${subdir}/

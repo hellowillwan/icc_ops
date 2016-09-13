@@ -247,9 +247,13 @@ sync_demo_prod ()
 	rsync	-vrogptl --delete \
 		--blocking-io \
 		--exclude='.svn' \
+		--exclude='.git' \
+		--exclude='.buildpath' \
+		--exclude='.project' \
+		--exclude='.gitignore' \
 		--exclude='*.log' \
-		--exclude='/cache/*' \
 		--exclude='/logs/*' \
+		--exclude='/cache/*' \
 		--exclude=node_modules \
 		"$1" "$2" 2>&1
 

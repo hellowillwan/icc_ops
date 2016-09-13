@@ -41,8 +41,13 @@ RsyncCode2App ()
 		--blocking-io \
 		--exclude='.svn' \
 		--exclude='.git' \
+		--exclude='.buildpath' \
+		--exclude='.project' \
+		--exclude='.gitignore' \
 		--exclude='*.log' \
-		--exclude='*/logs/*' \
+		--exclude='/logs/*' \
+		--exclude='/cache/*' \
+		--exclude=node_modules \
 		/home/webs/ \
 		${ip}::web/  &> /var/log/RsyncCode2APP-${ip}-$(eval $DT1).log
 
