@@ -16,7 +16,8 @@ IF ERRORLEVEL 0 goto hhaa
 
 :hhaa
 c:\Python27\python.exe E:\Repositories\python\svn_checkout_over_ssh.py %PROJECT% %2'''
-    pre_commit_content = '''php d:\php-svn-hook-master\svn_pre_commit_hook.php %1 %2 --include=EmptyComment:NoTabs:Syntax --exclude=EmptyComment:NoTabs'''
+    #pre_commit_content = '''php d:\php-svn-hook-master\svn_pre_commit_hook.php %1 %2 --include=EmptyComment:NoTabs:Syntax --exclude=EmptyComment:NoTabs'''
+    pre_commit_content = '''php d:\php-svn-hook-master\svn_pre_commit_hook.php %1 %2 --include=EmptyComment:NoTabs:Syntax --exclude=NoTabs'''
     f_post_commit = open(hook_path,'w')
     #ret = f_post_commit.write(content.replace('140523fg0220',project_code))
     f_post_commit.write(post_commit_content.replace('140523fg0220',project_code))
