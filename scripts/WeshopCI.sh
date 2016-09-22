@@ -204,7 +204,7 @@ commit_svn() {
 				| grep -q -e 'svn: E195022.*is locked in another working copy' ; do
 				${svncmd} ${svnoptions} unlock --force \
 				$(${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1 \
-				| grep -q -e 'svn: E195022.*is locked in another working copy' \
+				| grep -e 'svn: E195022.*is locked in another working copy' \
 				| awk -F"'" '{print $2}')
 			done
 			${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${workingdir} 2>&1	# 如果有其他报错,这里抛出来
@@ -271,7 +271,7 @@ commit_svn_new() {
 			| grep -q -e 'svn: E195022.*is locked in another working copy' ; do
 			${svncmd} ${svnoptions} unlock --force \
 			$(${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${webroot}/${project_code} 2>&1 \
-			| grep -q -e 'svn: E195022.*is locked in another working copy' \
+			| grep -e 'svn: E195022.*is locked in another working copy' \
 			| awk -F"'" '{print $2}')
 		done
 		${svncmd} ${svnoptions} commit -m "update by weshop ci_tool ${message}" ${webroot}/${project_code} 2>&1	# 如果有其他报错,这里抛出来
