@@ -238,12 +238,12 @@ commit_svn_new() {
 	for project_code in ${projects};do
 		if ! grep -q -i -e "^${project_code}\$" $project_list &>/dev/null;then echo $project_code not in $project_list ;continue ;fi # 检查一下
 		# 加锁屏蔽其他进程对同一个 workingdir 做 svn 操作
-		local lockfile="/var/lib/weshopchild_${project_code}.lock"
-		while test -f $lockfile ;do
-			echo "$lockfile exists,other svn operations are running.sleep for 60 secs..."
-			sleep 60
-		done
-		touch $lockfile
+		#local lockfile="/var/lib/weshopchild_${project_code}.lock"
+		#while test -f $lockfile ;do
+		#	echo "$lockfile exists,other svn operations are running.sleep for 60 secs..."
+		#	sleep 60
+		#done
+		#touch $lockfile
 		# 按文件列表逐条做 svn add
 		for item in ${flists};do
 			local workingdir="${webroot}/${project_code}${item}"
@@ -278,7 +278,7 @@ commit_svn_new() {
 		local commit_ret=$?
 		if [ ${commit_ret} -eq 0 ];then echo "SVN 提交成功.";else echo "SVN 提交失败,请联系管理员.";fi
 		# 解锁
-		test -f $lockfile && rm -f $lockfile
+		#test -f $lockfile && rm -f $lockfile
 		echo
 	done
 }
@@ -452,10 +452,22 @@ commt_weshopchild() {
 
 	for project in ${PROJECTS} ;do
 		local log_file="/var/log/weshop_distribute.${project}.$(date +%s_%N).log"
+		# 加锁屏蔽其他进程对同一个 workingdir 做 svn 操作
+		echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
+		echo "$(date) 项目 $project 获取操作锁" | /usr/bin/tee -a ${log_file}
+		local lockfile="/var/lib/weshopchild_${project}.lock"
+		while test -f $lockfile ;do
+			echo "$(date) other operations are running.sleep for 60 secs..." | /usr/bin/tee -a ${log_file}
+			sleep 60
+		done
+		touch $lockfile ; echo -e "$(date) got lock for ${project}.\n" | /usr/bin/tee -a ${log_file}
+
 		# 从 svn 仓库签出最新版到专门的workingdir
 		echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
 		echo "$(date) 从 SVN 仓库签出项目 $project 当前最新版本" | /usr/bin/tee -a ${log_file}
+		${svncmd} ${svnoptions} cleanup ${webroot}/${project} > /dev/null 2>&1
 		${svncmd} ${svnoptions} co https://192.168.5.40/svn/${project} ${webroot}/${project} 2>&1 | /usr/bin/tee -a ${log_file}
+
 		# 拉取 和 打包
 		for ftype in ui php;do
 			echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
@@ -467,10 +479,17 @@ commt_weshopchild() {
 				pack_ui $project 2>&1 | /usr/bin/tee -a ${log_file}
 			fi
 		done
+
 		# 提交到项目 SVN 仓库
 		echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
 		echo "$(date) 提交项目 $project dev环境 代码到 SVN 仓库" | /usr/bin/tee -a ${log_file}
 		commit_svn_new phpandui $project 2>&1 | /usr/bin/tee -a ${log_file}
+
+		# 解锁
+		echo ++++++++++++++++++++++++++++++++++++++++++++++++++++ | /usr/bin/tee -a ${log_file}
+		test -f $lockfile && rm -f $lockfile
+		echo -e "$(date) 项目 $project 解锁\n" | /usr/bin/tee -a ${log_file}
+
 		# 压缩日志文件
 		gzip $log_file ; local log_file="${log_file}.gz"
 		# 发邮件
