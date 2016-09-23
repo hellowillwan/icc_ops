@@ -238,11 +238,51 @@ recreate_project_cfgs() {
 
 sync_demo_prod ()
 {
+	# test
+	# echo 19a65877f1c3911eb80a4173c52d353e sync_demo_prod /home/webs/haoyadatestdemo/public/zhibo /home/webs/haoyadatest/public/ 1474443736.3109_290435329 the_last_one | ./CommonWorker.sh
 	if [ -z "$2" ];then
 		echo "Deployer : missing parameter,return code:1"
 		return 1
 	fi
 
+	# 如果有传递 sync_id 则加锁备份生产环境代码
+	if [ -n "$3" ];then
+		local sync_id="$3"	# sync_id 标记一次同步操作(一次同步操作可能有1个或多个文件被同步,下面的rsync会被调用1次或多次)
+		local project=$(echo $2 | cut -d '/' -f 4)
+		local lock_file="/var/lib/${project}.lock"
+		# 有lock file
+		if [ -f ${lock_file} ];then
+			if grep -q $sync_id ${lock_file} ;then
+				# 是同一次操作加的锁,应该已经备份了
+				local is_backupd='yes'
+			else
+				# 是其他操作加的锁 等待 直到其他操作解锁
+				while test -f ${lock_file} ;do
+					sleep 1
+				done
+			fi
+		fi
+		# 没有 lock file (必满足下面的条件) 则 加锁 备份;
+		# 如果有 lock file,上面已经判断过了:
+		#	同一次操作的必然已经备份过了,必然不满足下面的条件,会跳过;
+		#	不是同一次操作,会等到其他操作完成,也就必然满足下面的条件
+		if [ -z "${is_backupd}" -o "${is_backupd}" != 'yes' ];then
+			# 加锁
+			echo $1 $2 $sync_id > $lock_file
+			# 备份 ( Prod ---> Bak1 ---> Bak2 ---> Bak3 )
+			local WEBROOT='/home/webs/'
+			local BAKROOT='/home/baks/'
+			local Prod="${WEBROOT}${project}" ; test -d $Prod || mkdir -p $Prod &>/dev/null
+			local Bak1="${BAKROOT}${project}_Bak1" ; test -d $Bak1 || mkdir -p $Bak1 &>/dev/null
+			local Bak2="${BAKROOT}${project}_Bak2" ; test -d $Bak2 || mkdir -p $Bak2 &>/dev/null
+			local Bak3="${BAKROOT}${project}_Bak3" ; test -d $Bak3 || mkdir -p $Bak3 &>/dev/null
+			rsync -a --delete $Bak2/ $Bak3/ &>/dev/null
+			rsync -a --delete $Bak1/ $Bak2/ &>/dev/null
+			rsync -a --delete $Prod/ $Bak1/ &>/dev/null
+		fi
+	fi
+
+	# 同步 demo -> prod
 	#rsync	-vrogptlc --delete \
 	rsync	-vrogptl --delete \
 		--blocking-io \
@@ -263,6 +303,19 @@ sync_demo_prod ()
 	else
 		echo "Deployer : sync $1 to $2 ok,return code:$ret"
 	fi
+
+	# 写个版本号到Prod,但如果本次同步操作并没有差异文件被同步的话,这个版本文件不会被分发到app机器.
+	if [ -n "${sync_id}" ];then
+		local VerFile="/home/webs/${project}/public/__VERSION__.txt"
+		echo $sync_id > $VerFile 2>&1
+		date -d @$(echo ${sync_id} | cut -d _ -f 1) >> $VerFile 2>&1
+	fi
+
+	# 如果是同步操作中的最后一个 item ,在这里解锁
+	if [ -n "$4" -a "$4" = 'the_last_one' ];then
+		test -f ${lock_file} && rm ${lock_file} -f
+	fi
+
 	return $ret
 }
 
@@ -298,9 +351,9 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger Deployer $p1 $p2 $p3 return code:$?
 		;;
 	add_hostname|sync_demo_prod)
-		$cmd $p3 $p4
+		$cmd $p3 $p4 $p5 $p6
 		ret=$?
-		logger Deployer $p1 $p2 $p3 $p4 return code:$ret
+		logger Deployer $p1 $p2 $p3 $p4 $p5 $p6 return code:$ret
 		exit $ret
 		;;
 	sync_a_project_code)
