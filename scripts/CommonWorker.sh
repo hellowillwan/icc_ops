@@ -279,6 +279,8 @@ sync_demo_prod ()
 			rsync -a --delete $Bak2/ $Bak3/ &>/dev/null
 			rsync -a --delete $Bak1/ $Bak2/ &>/dev/null
 			rsync -a --delete $Prod/ $Bak1/ &>/dev/null
+			# 清除 Prod 版本号文件
+			test -f ${Prod}/public/__VERSION__.txt && rm -f ${Prod}/public/__VERSION__.txt &>/dev/null
 		fi
 	fi
 
@@ -297,18 +299,23 @@ sync_demo_prod ()
 		--exclude=node_modules \
 		"$1" "$2" 2>&1
 
-	ret=$?
+	local ret=$?
 	if [ $ret -gt 0 ];then
 		echo "Deployer : sync $1 to $2 with error,return code:$ret"
 	else
 		echo "Deployer : sync $1 to $2 ok,return code:$ret"
 	fi
 
-	# 写个版本号到Prod,但如果本次同步操作并没有差异文件被同步的话,这个版本文件不会被分发到app机器.
+	# 写个版本号到 Prod 记录每次同步操作的内容和时间(但如果本次同步操作并没有差异文件被同步的话,这个版本文件不会被分发到app机器)
 	if [ -n "${sync_id}" ];then
+		# 记录同步的条目以及同步命令的返回码
 		local VerFile="/home/webs/${project}/public/__VERSION__.txt"
-		echo $sync_id > $VerFile 2>&1
-		date -d @$(echo ${sync_id} | cut -d _ -f 1) >> $VerFile 2>&1
+		echo "$1 ---> $2 : $ret" | sed 's#/home/webs##g' >> $VerFile 2>&1
+		# 记录同步操作的时间
+		if [ -n "$4" -a "$4" = 'the_last_one' ];then
+			echo $sync_id >> $VerFile 2>&1
+			date -d @$(echo ${sync_id} | cut -d _ -f 1) >> $VerFile 2>&1
+		fi
 	fi
 
 	# 如果是同步操作中的最后一个 item ,在这里解锁
