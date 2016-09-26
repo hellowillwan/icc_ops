@@ -36,19 +36,19 @@ p_ret() {
 
 # 发送邮件
 sendemail () {
-	SNDEMAIL_LOG='/tmp/sendemail.log'
+	local SNDEMAIL_LOG='/tmp/sendemail.log'
 	if [ -z "$3" ] ;then
 		echo -e "\n$(date) : parameters missing." >> $SNDEMAIL_LOG 
 		return 1
 	fi
 	
-	to_list=$1
-	subject=$2
-	content=$3
+	local to_list=$1
+	local subject=$2
+	local content=$3
 	if [ -z "$4" ];then
-		attachment=''
+		local attachment=''
 	else
-		attachment=" -F ${4} "
+		local attachment=" -F ${4} "
 	fi
 	#echo -e "\n$(date)\n${to_list}\n${subject}\n${content}" >> $SNDEMAIL_LOG
 	echo -e "\n$(date)\n${to_list}\n${subject}" >> $SNDEMAIL_LOG
@@ -57,7 +57,7 @@ sendemail () {
 		-t "$to_list" \
 		-S "$subject" \
 		-m "$content" ${attachment} 2>&1 | tee -a $SNDEMAIL_LOG 2>&1
-	ret=$?
+	local ret=$?
 	if [ $ret -eq 0 ] ;then
 		echo "$(date) : mail sent." | tee -a $SNDEMAIL_LOG
 	else
@@ -72,8 +72,8 @@ get_project_status ()
 		return 1
 	fi
 
-	project_code="$1"
-	project_domain="${project_code}.umaman.com"
+	local project_code="$1"
+	local project_domain="${project_code}.umaman.com"
 	if grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $proxy_cfg_path \
 		&& grep -rl -P -e "^[ |\t]*server_name[ |\t].*$project_domain" $app_cfg_path
 	then
@@ -100,14 +100,14 @@ add_hostname ()
 		echo "Deployer : missing parameter,return code:1"
 		return 1
 	fi
-	project_code="$1"
-	hostname="$2"
+	local project_code="$1"
+	local hostname="$2"
 	if get_project_status $project_code &>/dev/null ;then
 		#项目是否是demo
 		if echo "$project_code" | grep -e 'demo$' &>/dev/null ;then
-			subpath='demo/'
+			local subpath='demo/'
 		else
-			subpath='vhost/'
+			local subpath='vhost/'
 		fi
 
 		#是否已经有该主机头了
@@ -152,9 +152,9 @@ add_project ()
 		return 1
 	fi
 
-	project_code="$1"
+	local project_code="$1"
 	#项目主域名
-	project_domain="${project_code}.umaman.com"
+	local project_domain="${project_code}.umaman.com"
 	if get_project_status $project_code &>/dev/null ;then
 		#项目已经配置,返回
 		echo "Deployer : $project_code was allready configured,return code:1"
@@ -171,13 +171,13 @@ add_project ()
 			local proxy_cfg_t="$proxy_cfg_template"
 		fi
 		#专门服务静态资源的域名
-		project_domain_static="${project_code}.umaman.net"
+		local project_domain_static="${project_code}.umaman.net"
 		#另外三个备用的域名
-		project_domain_backup="${project_code}.icatholiccloud.com ${project_code}.icatholiccloud.net ${project_code}.icatholiccloud.cn"
+		local project_domain_backup="${project_code}.icatholiccloud.com ${project_code}.icatholiccloud.net ${project_code}.icatholiccloud.cn"
 		# 配置模板中需要替换的变量
-		PROJECT_DOMAIN="$project_domain $project_domain_static $project_domain_backup"
-		PROJECT_STATIC_DOMAIN="${project_domain_static}"
-		CACHE_ZONE_NAME="$project_domain"
+		local PROJECT_DOMAIN="$project_domain $project_domain_static $project_domain_backup"
+		local PROJECT_STATIC_DOMAIN="${project_domain_static}"
+		local CACHE_ZONE_NAME="$project_domain"
 
 		#生成项目app配置
 		cat $app_cfg_template | sed -e "s/PROJECT_DOMAIN/$PROJECT_DOMAIN/g" \
