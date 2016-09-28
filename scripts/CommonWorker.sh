@@ -326,6 +326,46 @@ sync_demo_prod ()
 	return $ret
 }
 
+listbak() {
+	if [ -z "$1" ];then
+		echo "parameter missing,need project_code"
+		return 1
+	else
+		local project="$1"
+	fi
+
+	for bak in /home/baks/${project}_*;do
+		local bakname=$(echo $bak |sed 's#/home/baks/##')
+		local bak_public_items_number=$(ls ${bak}/public/ 2>/dev/null | wc -l)
+		local bak_latest_mtime=$(ls ${bak} -lt|grep -v -e '^total'|head  -n 1|awk '{print $6,$7,$8}')	# 由于 version 文件,所以这个值没意义
+		# 如果 public 目录下有2个或以上的文件|目录,则判断这个备份不为空(新项目第一次同步产生的备份肯定是空的)
+		if [ $bak_public_items_number -ge 2 ];then
+			# 备份功能上线后,同步4次以后,3个备份目录里将都会有__VERSION__.txt文件
+			if [ -f ${bak}/public/__VERSION__.txt ];then
+				local version_info=$(cat ${bak}/public/__VERSION__.txt | base64 -w 0)
+				local output="${bakname}#${bak_latest_mtime}#${version_info}"
+			else
+				local output="${bakname}#${bak_latest_mtime}#"
+			fi
+		else
+			local output="${bakname}##"
+		fi
+		echo $output
+	done
+}
+
+rollback() {
+	if [ -z "$2" ];then
+		echo "parameter missing,need project, bakname"
+		return 1
+	else
+		local project="$1"
+		local bakname="$2"
+	fi
+	rsync -av --delete /home/baks/${bakname}/ /home/webs/${project}/ 2>&1
+
+}
+
 dir_tree ()
 {
 	if [ -z "$1" ];then
@@ -357,7 +397,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		$cmd $p3
 		logger Deployer $p1 $p2 $p3 return code:$?
 		;;
-	add_hostname|sync_demo_prod)
+	add_hostname|sync_demo_prod|listbak|rollback)
 		$cmd $p3 $p4 $p5 $p6
 		ret=$?
 		logger Deployer $p1 $p2 $p3 $p4 $p5 $p6 return code:$ret
