@@ -25,7 +25,7 @@ server
 		#INCLUDE_FASTCGI_PARAMS_TAG;
 	}
 
-	location ~* \.(html|jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|avi|wma|wmv|ttf|eot|otf|woff|svg)$ {
+	location ~* \.(jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|ogv|avi|wma|wmv|ttf|eot|otf|woff|svg|txt|json|html)$ {
 		try_files $uri /404.html =404;
 	}
 }
