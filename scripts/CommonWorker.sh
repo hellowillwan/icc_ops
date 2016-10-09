@@ -479,11 +479,15 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		exit $ret
 		;;
 	restart_all_pyweixin)
-		/usr/bin/func 'app*' call command run '. ~/.bashrc;pyweixin_restart'
+		if [ -n "$p3" -a "$p3" != 'ALL' ];then
+			/usr/bin/func "$p3" call command run '. ~/.bashrc;pyweixin_restart'
+		else
+			/usr/bin/func 'app*' call command run '. ~/.bashrc;pyweixin_restart'
+		fi
 		ret=$?
 		sleep 5
 		/usr/local/sbin/check_services.sh pyweixin 2>&1
-		logger CommonWorker $p1 $p2 return code:$ret
+		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
 		;;
 	swoolechat_restart)
