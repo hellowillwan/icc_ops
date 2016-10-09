@@ -27,7 +27,7 @@ svn_checkout() {
 	echo ++++++++++++++++++++++++++ >> ${logfile} 2>&1
 	date >> ${logfile} 2>&1
 	local svn_co_result=$( ${SVNCMD} checkout ${project_svnurl} ${project_workingcopypath} ${SVNOPTIONS} 2>&1;echo $? )
-	local ret=$(echo ${svn_co_result} | tail -n 1)	# svn checkout 命令的返回码
+	local ret=$(echo ${svn_co_result} | awk '{print $NF}' )	# svn checkout 命令的返回码
 	echo ${svn_co_result} >> ${logfile} 2>&1
 	date >> ${logfile} 2>&1
 	echo -e "\n\n" >> ${logfile} 2>&1
