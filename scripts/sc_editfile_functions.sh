@@ -38,9 +38,13 @@ edit_file() {
 			else
 				echo "配置保存失败,当前配置文件:"
 			fi
-				ls -lht $file
-				echo "文件内容如下:"
-				cat $file
+			# output file contents
+			ls -lht $file
+			echo "文件内容如下:"
+			cat $file
+			# sync to 5.41 & 60.33
+			scp $file root@192.168.5.41:/var/lib/ &>/dev/null
+			scp $file wanlong@211.152.60.33:/var/lib/ &>/dev/null
 		else
 			echo "Bad action parameter or cfg_text missing."
 			return 0
