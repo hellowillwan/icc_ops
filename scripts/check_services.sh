@@ -449,6 +449,9 @@ elif [ "$1" = 'php' -o "$1" = "php_stat" ];then
 	php_terminating
 	php_tooslow
 	php_segfault
+elif [ "$1" = 'php-fpm' -o "$1" = "phpfpm" -o "$1" = "fpm" ];then
+	nginx
+	php
 elif [ "$1" = 'load' -o "$1" = "system_load" ];then
 	load
 elif [ "$1" = 'db' -o "$1" = 'mongodb' ];then
