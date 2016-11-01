@@ -1,15 +1,17 @@
 #!/bin/sh
 
-#env
+# env
 export PATH="/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin:/usr/local/sbin"
 
 readonly PROGNAME=$(basename $0|sed 's/\.sh$//;s/_/ /g')
 readonly third_api_domain_list='/var/lib/third_api_domain_list'	#第三方接口的域名列表
-readonly hosts_file='/tmp/xdebug_log_dir/.hosts'
+readonly hosts_file='/tmp/xdebug_log_dir/.hosts'	# 用于分发到其它 app 机器
 readonly local_proxy_ip='10.0.0.1'
 readonly app_nginx_conf='/home/app_nginx_conf/'
 
 
+# 更新第三方接口域名解析记录到 .hosts 文件
+#
 cat ${third_api_domain_list} | while read hostname ;do
 	ipaddr=$(dig @116.228.111.118 $hostname 2>/dev/null | grep -P '\tA\t' 2>/dev/null | head -n 1 |awk '{print $NF}' \
 		|grep -P -e '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' 2>/dev/null)
@@ -37,7 +39,7 @@ done
 
 
 
-#配置在集群上的域名
+# 更新配置在集群上的域名解析记录到 .hosts 文件
 #
 for my_hostname in `grep -hr -P -e '^[ |\t]*server_name[ |\t]' ${app_nginx_conf} \
 			|sed 's#server_name##;s#;.*$##' \
@@ -63,10 +65,32 @@ do
 done
 
 
-#localhost
+
+# 添加 localhost 记录到 .hosts 文件
 #
 /bin/grep -q -e '^127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4$' ${hosts_file} || \
 /bin/sed -i '1i127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4' ${hosts_file}
+
+
+
+# 更新第三方接口域名解析记录到 /etc/hosts 文件(更新本机)
+#
+cat ${third_api_domain_list} | while read hostname ;do
+	record=$(grep -P -e "^[^#]*[ |\t]${hostname}\$" $hosts_file)
+	test -z "$record" && continue
+	if grep -q -e "^${record}$" /etc/hosts ;then
+		# 记录一样
+		:
+	elif grep -q -P -e "^[^#]*[ |\t]${hostname}\$" /etc/hosts ;then
+		# 记录存在但不一样
+		sed -i "/[ |\t]${hostname}\$/c\\${record}" /etc/hosts
+		logger "$PROGNAME update ${record} to /etc/hosts return code: $?"
+	else
+		# 记录不存在
+		echo $record | tr ' ' '\t'  >> /etc/hosts
+		logger "$PROGNAME add ${record} to /etc/hosts return code: $?"
+	fi
+done
 
 
 # 检查容器内hosts文件是否已更新
