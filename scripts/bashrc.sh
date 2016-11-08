@@ -14,12 +14,14 @@ alias goto5.41='ssh -p 8389 wanlong@127.0.0.1'
 alias mongo5.40='/home/60000/bin/mongo 127.0.0.1:37017'
 alias redis-cli='/home/redis-cluster/bin/redis-cli'
 alias psp="ps -e -o'pcpu,pmem,rsz,pid,comm,args'|sort -k1,2nr|head -n 50"
-alias forget='export HISTFILE=/dev/null'
+alias fb='export HISTFILE=/dev/null'
+alias hc='history -c'
 alias hdp='su root -c "su - hadoop"'
 alias vanke='echo "connecting to 121.40.150.104";ssh root@121.40.150.104'
 alias hqvanke='echo "connecting to 139.196.54.21"; ssh root@139.196.54.21'
 alias huabao='echo "connecting to huabao xintuo"; ssh -p 8390 root@127.0.0.1'
 alias check='/usr/local/sbin/check_services.sh'
+
 goto () {
 	if [ -z $1 ];then
 		echo "IP parameter missing."
