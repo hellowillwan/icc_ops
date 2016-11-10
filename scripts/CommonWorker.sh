@@ -245,43 +245,12 @@ sync_demo_prod ()
 		return 1
 	fi
 
-	# 如果有传递 sync_id 则加锁备份生产环境代码
-	if [ -n "$3" ];then
-		local sync_id="$3"	# sync_id 标记一次同步操作(一次同步操作可能有1个或多个文件被同步,下面的rsync会被调用1次或多次)
-		local project=$(echo $2 | cut -d '/' -f 4)
-		local lock_file="/var/lib/${project}.lock"
-		# 有lock file
-		if [ -f ${lock_file} ];then
-			if grep -q $sync_id ${lock_file} ;then
-				# 是同一次操作加的锁,应该已经备份了
-				local is_backupd='yes'
-			else
-				# 是其他操作加的锁 等待 直到其他操作解锁
-				while test -f ${lock_file} ;do
-					sleep 1
-				done
-			fi
-		fi
-		# 没有 lock file (必满足下面的条件) 则 加锁 备份;
-		# 如果有 lock file,上面已经判断过了:
-		#	同一次操作的必然已经备份过了,必然不满足下面的条件,会跳过;
-		#	不是同一次操作,会等到其他操作完成,也就必然满足下面的条件
-		if [ -z "${is_backupd}" -o "${is_backupd}" != 'yes' ];then
-			# 加锁
-			echo $1 $2 $sync_id > $lock_file
-			# 备份 ( Prod ---> Bak1 ---> Bak2 ---> Bak3 )
-			local WEBROOT='/home/webs/'
-			local BAKROOT='/home/baks/'
-			local Prod="${WEBROOT}${project}" ; test -d $Prod || mkdir -p $Prod &>/dev/null
-			local Bak1="${BAKROOT}${project}_Bak1" ; test -d $Bak1 || mkdir -p $Bak1 &>/dev/null
-			local Bak2="${BAKROOT}${project}_Bak2" ; test -d $Bak2 || mkdir -p $Bak2 &>/dev/null
-			local Bak3="${BAKROOT}${project}_Bak3" ; test -d $Bak3 || mkdir -p $Bak3 &>/dev/null
-			rsync -a --delete $Bak2/ $Bak3/ &>/dev/null
-			rsync -a --delete $Bak1/ $Bak2/ &>/dev/null
-			rsync -a --delete $Prod/ $Bak1/ &>/dev/null
-			# 清除 Prod 版本号文件
-			test -f ${Prod}/public/__VERSION__.txt && rm -f ${Prod}/public/__VERSION__.txt &>/dev/null
-		fi
+	# 检查是否有备份操作正在进行
+	local project=$(echo $2 | cut -d '/' -f 4)
+	local lock_file="/var/lib/${project}.lock"
+	if [ -f ${lock_file} ];then
+		echo "备份进行中,此时无法进行同步操作,请稍后再试.( 按F5刷新即可 )"
+		return 2
 	fi
 
 	# 同步 demo -> prod
@@ -307,21 +276,20 @@ sync_demo_prod ()
 	fi
 
 	# 写个版本号到 Prod 记录每次同步操作的内容和时间(但如果本次同步操作并没有差异文件被同步的话,这个版本文件不会被分发到app机器)
-	if [ -n "${sync_id}" ];then
-		# 记录同步的条目以及同步命令的返回码
-		local VerFile="/home/webs/${project}/public/__VERSION__.txt"
-		echo "$1 ---> $2 : $ret" | sed 's#/home/webs##g' >> $VerFile 2>&1
-		# 记录同步操作的时间
-		if [ -n "$4" -a "$4" = 'the_last_one' ];then
-			echo $sync_id >> $VerFile 2>&1
-			date -d @$(echo ${sync_id} | cut -d _ -f 1) >> $VerFile 2>&1
-		fi
+	local sync_id="${3:-sync_id}"
+	local VerFile="/home/webs/${project}/public/__VERSION__.txt"
+	# 记录同步的条目以及同步命令的返回码
+	echo "$1 ---> $2 : $ret" | sed 's#/home/webs##g' >> $VerFile 2>&1
+	# 记录同步操作的时间
+	if [ -n "$4" -a "$4" = 'the_last_one' ];then
+		echo $sync_id >> $VerFile 2>&1
+		date -d @$(echo ${sync_id} | cut -d _ -f 1) >> $VerFile 2>&1
 	fi
 
-	# 如果是同步操作中的最后一个 item ,在这里解锁
-	if [ -n "$4" -a "$4" = 'the_last_one' ];then
-		test -f ${lock_file} && rm ${lock_file} -f
-	fi
+	# 如果是同步操作中的最后一个 item ,在这里发起备份.已经采用cronjob方式进行,这里注释掉
+	#if [ -n "$4" -a "$4" = 'the_last_one' ];then
+	#	echo $localkey backupprod ${project} | /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b
+	#fi
 
 	return $ret
 }
@@ -509,6 +477,11 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		source /usr/local/sbin/sc_weshopci_functions.sh
 		$cmd $p3 $p4
 		logger CommonWorker $p1 $p2 $p3
+		;;
+	backupprod)
+		source /usr/local/sbin/sc_backupprod_functions.sh
+		$cmd $p3 $p4
+		logger CommonWorker $p1 $p2 $p3 $p4 $p5
 		;;
 	test_timeout)
 		sleep 1200
