@@ -7,6 +7,7 @@ fi
 
 # User specific aliases and functions
 alias psp='ps -e -o'\''pcpu,pmem,rss,pid,comm,args'\''|sort -k1,2nr|head -n 50'
+alias hc='history -c;clear'
 
 top_slow_query() {
 	if [ -z $1 ];then
