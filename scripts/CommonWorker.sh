@@ -278,10 +278,14 @@ sync_demo_prod ()
 	# 写个版本号到 Prod 记录每次同步操作的内容和时间(但如果本次同步操作并没有差异文件被同步的话,这个版本文件不会被分发到app机器)
 	local sync_id="${3:-sync_id}"
 	local VerFile="/home/webs/${project}/public/__VERSION__.txt"
-	# 记录同步的条目以及同步命令的返回码
+	# 如果是第一个条目 则清空版本文件内容
+	if [ -n "$4" ] && [ "$4" = 'the_only_one' -o "$4" = 'the_first_one' ];then
+		:> $VerFile 2>&1
+	fi
+	# 记录每一次同步的条目以及同步命令的返回码
 	echo "$1 ---> $2 : $ret" | sed 's#/home/webs##g' >> $VerFile 2>&1
-	# 记录同步操作的时间
-	if [ -n "$4" -a "$4" = 'the_last_one' ];then
+	# 如果是最后一个条目 则记录同步操作的时间
+	if [ -n "$4" ] && [ "$4" = 'the_only_one' -o "$4" = 'the_last_one' ];then
 		echo $sync_id >> $VerFile 2>&1
 		date -d @$(echo ${sync_id} | cut -d _ -f 1) >> $VerFile 2>&1
 	fi
