@@ -117,8 +117,9 @@ tomcat_restart() {
 		return 1
 	fi
 	# 修改配置
+	docker exec ${ctn} bash -c 'rm /etc/localtime -f;ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime'
 	docker exec ${ctn} bash -c 'test -L /usr/local/tomcat/logs || rm /usr/local/tomcat/logs -rf'
-	docker exec ${ctn} bash -c 'mkdir -p /tmp/tomcat; ln -s /tmp/tomcat /usr/local/tomcat/logs'
+	docker exec ${ctn} bash -c 'mkdir -p /tmp/tomcat; test -L /usr/local/tomcat/logs || ln -s /tmp/tomcat /usr/local/tomcat/logs'
 	docker exec ${ctn} /usr/bin/sed -i "s#appBase=.*#appBase=\"/home/wwwroot/${project}\"#" /usr/local/tomcat/conf/server.xml
 	# 重启
 	docker stop ${ctn}
