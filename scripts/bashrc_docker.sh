@@ -113,10 +113,14 @@ tomcat_restart() {
 	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
 
 	if [ -z "$1" -o -z "$2" -o -z "$ctn" ];then
-		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
+		echo "parameter missing,nothing done,usage: tomcat_restart port project"
 		return 1
 	fi
-	
+	# 修改配置
+	docker exec ${ctn} bash -c 'test -L /usr/local/tomcat/logs || rm /usr/local/tomcat/logs -rf'
+	docker exec ${ctn} bash -c 'mkdir -p /tmp/tomcat; ln -s /tmp/tomcat /usr/local/tomcat/logs'
+	docker exec ${ctn} /usr/bin/sed -i "s#appBase=.*#appBase=\"/home/wwwroot/${project}\"#" /usr/local/tomcat/conf/server.xml
+	# 重启
 	docker stop ${ctn}
 	local GLOBIGNORE="${webroot}/ROOT.war"
 	rm ${webroot}/* -rf
