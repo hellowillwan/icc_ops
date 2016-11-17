@@ -106,6 +106,27 @@ pyweixin_status() {
 	docker ps|grep -e 'STATUS' -e 'py_weixin_service'
 }
 
+tomcat_restart() {
+	local port="$1"
+	local project="$2"
+	local webroot="/home/wwwroot/$project/"
+	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+
+	if [ -z "$1" -o -z "$2" -o -z "$ctn" ];then
+		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
+		return 1
+	fi
+	
+	docker stop ${ctn}
+	local GLOBIGNORE="${webroot}/ROOT.war"
+	rm ${webroot}/* -rf
+	unset GLOBIGNORE
+	rsync -ac /home/webs/idirector/wars/${project}.war ${webroot}/ROOT.war &>/dev/null
+	docker start ${ctn}
+	sleep 2
+	docker ps -a|awk '/'$ctn'/{print $NF,$(NF-4),$(NF-3),$(NF-2)}'
+}
+
 swoolechat_restart() {
 	local port="$1"
 	local project="$2"

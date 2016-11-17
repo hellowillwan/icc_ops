@@ -462,11 +462,11 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
 		;;
-	swoolechat_restart)
+	swoolechat_restart|tomcat_restart)
 		app="$p3"
 		port="$p4"
 		proj="$p5"
-		/usr/bin/func "${app}" call command run ". ~/.bashrc;swoolechat_restart ${port} ${proj}" &
+		/usr/bin/func "${app}" call command run ". ~/.bashrc; ${cmd} ${port} ${proj}" &
 		echo 'should have been finished restarting.'
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5
 		;;
