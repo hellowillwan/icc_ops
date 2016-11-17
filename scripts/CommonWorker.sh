@@ -277,7 +277,7 @@ sync_demo_prod ()
 
 	# 写个版本号到 Prod 记录每次同步操作的内容和时间(但如果本次同步操作并没有差异文件被同步的话,这个版本文件不会被分发到app机器)
 	local sync_id="${3:-sync_id}"
-	local VerFile="/home/webs/${project}/public/__VERSION__.txt"
+	local VerFile="/home/webs/${project}/__VERSION__.txt"
 	# 如果是第一个条目 则清空版本文件内容
 	if [ -n "$4" ] && [ "$4" = 'the_only_one' -o "$4" = 'the_first_one' ];then
 		:> $VerFile 2>&1
@@ -313,8 +313,8 @@ listbak() {
 		# 如果 public 目录下有2个或以上的文件|目录,则判断这个备份不为空(新项目第一次同步产生的备份肯定是空的)
 		if [ $bak_public_items_number -ge 2 ];then
 			# 备份功能上线后,同步4次以后,3个备份目录里将都会有__VERSION__.txt文件
-			if [ -f ${bak}/public/__VERSION__.txt ];then
-				local version_info=$(cat ${bak}/public/__VERSION__.txt | base64 -w 0)
+			if [ -f ${bak}/__VERSION__.txt ];then
+				local version_info=$(cat ${bak}/__VERSION__.txt | base64 -w 0)
 				local output="${bakname}#${bak_latest_mtime}#${version_info}"
 			else
 				local output="${bakname}#${bak_latest_mtime}#"

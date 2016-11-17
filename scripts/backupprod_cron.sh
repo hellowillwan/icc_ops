@@ -4,7 +4,7 @@
 #
 
 WEBROOT='/home/webs/'
-time_threshold=$((30*60))	# 最近一次同步操作距离现在的时间差,太短则表示可能还在调试,不要备份
+time_threshold=$((120*60))	# 最近一次同步操作距离现在的时间差,太短则表示可能还在调试,不要备份
 
 # 扫描所有项目的正式环境代码 通过版本文件检查最近一次同步操作的时间
 for project in $( ls /home/webs/ \
@@ -14,7 +14,7 @@ for project in $( ls /home/webs/ \
 do
 	# 检查项目是否有版本文件,没有则忽略 (久没有同步操作了)
 	echo "$(date) begin backup $project"
-	VerFile="${WEBROOT}${project}/public/__VERSION__.txt"
+	VerFile="${WEBROOT}${project}/__VERSION__.txt"
 	if [ ! -f $VerFile ];then
 		echo -e "$(date) $project has no ${VerFile},bypass.\n\n"
 		continue
@@ -29,7 +29,7 @@ do
 		time_diff=$(($(date +%s)-${time_of_sync_demo_prod}))
 		if [ $time_diff -ge $time_threshold ];then
 			# 检查当前生产环境 和 Bak1 是否相同
-			VerFile_Bak1="/home/baks/${project}_Bak1/public/__VERSION__.txt"
+			VerFile_Bak1="/home/baks/${project}_Bak1/__VERSION__.txt"
 			if diff -q $VerFile $VerFile_Bak1 &>/dev/null ;then
 				# 版本文件相同 说明当前生产环境已经备份到 Bak1了 不用再次备份
 				echo -e "$(date) $project ${VerFile} ${VerFile_Bak1} is the same,bypass.\n\n"

@@ -42,7 +42,7 @@ backupprod() {
 		rsync -a --delete $Prod/ $Bak1/ &>/dev/null
 
 	# 备份完清除 Prod 版本号文件
-	#local VerFile="${Prod}/public/__VERSION__.txt"
+	#local VerFile="${Prod}/__VERSION__.txt"
 	#test -f ${VerFile} && rm -f ${VerFile} &>/dev/null
 
 	# 日志
