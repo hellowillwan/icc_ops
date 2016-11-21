@@ -234,13 +234,7 @@ mongo_query() {
 			MONGO="/home/mongodb/bin/mongo"
 			MONGOS_PORT='40000'
 			MONGOS_IP='10.0.0.41'
-		elif [ "$DB" = "ICCv1" ] ;then
-			MONGOS_PORT='57017'
-		elif [ "$DB" = "mapreduce" ] ;then
-			MONGOS_PORT='57017'
-		elif [ "$DB" = "bda" ] ;then
-			MONGOS_PORT='57017'
-		elif [ "$DB" = "test" ] ;then
+		elif [ "$DB" = "ICCv1" -o "$DB" = "mapreduce" -o "$DB" = "bda" -o "$DB" = "test" -o "$DB" = "liveplus" -o "$DB" = "idirector" ] ;then
 			MONGOS_PORT='57017'
 		else
 			echo "DB not exist"
@@ -296,6 +290,8 @@ format_collection_name () {
 			echo "iDatabase.${2}"
 		fi
 		;;
+		*)
+		echo "${2}"
 	esac
 }
 
