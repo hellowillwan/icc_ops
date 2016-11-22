@@ -463,11 +463,15 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		exit $ret
 		;;
 	swoolechat_restart|tomcat_restart)
-		app="$p3"
-		port="$p4"
-		proj="$p5"
-		/usr/bin/func "${app}" call command run ". ~/.bashrc; ${cmd} ${port} ${proj}" &
-		echo 'should have been finished restarting.'
+		if [[ "${p3}" =~ ^app[0-9]+$ ]];then
+			app="$p3"
+			port="$p4"
+			proj="$p5"
+			/usr/bin/func "${app}" call command run ". ~/.bashrc; ${cmd} ${port} ${proj}" &
+			echo 'should have been finished restarting.'
+		else
+			echo 'parameter invalid,nothing done.'
+		fi
 		logger CommonWorker $p1 $p2 $p3 $p4 $p5
 		;;
 	flush_alicdn)
