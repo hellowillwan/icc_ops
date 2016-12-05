@@ -21,6 +21,7 @@ alias vanke='echo "connecting to 121.40.150.104";ssh root@121.40.150.104'
 alias hqvanke='echo "connecting to 139.196.54.21"; ssh root@139.196.54.21'
 alias huabao='echo "connecting to huabao xintuo"; ssh -p 8390 root@127.0.0.1'
 alias check='/usr/local/sbin/check_services.sh'
+alias showesqueue="watch -d -n 1 'echo llen logstash|redis-cli -h 10.0.0.23'"
 
 goto () {
 	if [ -z $1 ];then
@@ -101,6 +102,16 @@ sync_bashrc_to_apps() {
 	"su wanlong -c 'svn up /home/wanlong/PKG/ops/scripts/bashrc_docker.sh'; \
 	cat /home/wanlong/PKG/ops/scripts/bashrc_docker.sh > /root/.bashrc;echo \$?"
 	check_apps_bashrc
+}
+
+check_all_resolv() {
+	md5sum /etc/resolv.conf
+	func "proxy*;app*;mongo*;host20" call command run 'md5sum /etc/resolv.conf'
+}
+
+sync_resolv_to_all() {
+	func "proxy*;app*;mongo*;host20" copyfile --file='/etc/resolv.conf' --remotepath='/etc/resolv.conf'
+	check_all_resolv
 }
 
 check_all_containers() {
