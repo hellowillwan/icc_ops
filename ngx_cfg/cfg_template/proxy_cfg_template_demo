@@ -8,11 +8,42 @@ server {
 
 	include global.conf;
 
+	location ~* /(zhibo|zhibo2)/ {
+		# 预期这类目录下只有静态文件,替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
+		proxy_set_header Accept-Encoding '';
+		sub_filter '<base href="/' '<base href="http://PROJECT_STATIC_DOMAIN/';
+		sub_filter_last_modified on;
+
+		proxy_next_upstream http_502 error invalid_header;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP  $remote_addr;
+		proxy_pass http://$myapppool;
+	}
+
+	location ~* /html/m2/ {
+		# 预期这类目录下只有静态文件,替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
+		proxy_set_header Accept-Encoding '';
+		sub_filter '<base href="/' '<base href="http://PROJECT_STATIC_DOMAIN/';
+		sub_filter_last_modified on;
+
+		proxy_next_upstream http_502 error invalid_header;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP  $remote_addr;
+		proxy_pass http://$myapppool;
+	}
+
 	location / {
 		proxy_next_upstream http_502 error invalid_header;
 		proxy_set_header Host $host;
 		proxy_set_header X-Real-IP  $remote_addr;
 		proxy_pass http://$myapppool;
+
+		# 缓存后端返回的 404.以下设置只能在proxy上缓存,由于不能针对404去掉一些头,也不能添加 expires 头,所以在浏览器这边是无法缓存的.
+		#proxy_cache CACHE_ZONE_NAME;
+		#proxy_cache_valid  404 60s;
+		#proxy_cache_key $host$uri$is_args$args;
+		#proxy_ignore_headers Set-Cookie Cache-Control Expires;
+		#add_header X-Cache-s $upstream_cache_status;	# 404 看不到这个头
 	}
 
 	location ~ /purge(/.*) {
