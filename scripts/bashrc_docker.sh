@@ -109,8 +109,21 @@ pyweixin_status() {
 tomcat_restart() {
 	local port="$1"
 	local project="$2"
-	local webroot="/home/wwwroot/$project/"
+	local webroot="/home/wwwroot/${project}"
 	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+	case $project in
+	idirector|cmdapi)
+		local project_code="idirector"
+		local WARFILE="/home/webs/${project_code}/wars/${project}.war"
+		;;
+	liveplus)
+		local project_code="160523fg0262"
+		local WARFILE="/home/webs/${project_code}/java/wars/${project}.war"
+		;;
+	*)
+		echo 'bad project.nothing done.'
+		return 1
+	esac
 
 	if [ -z "$1" -o -z "$2" -o -z "$ctn" ];then
 		echo "parameter missing,nothing done,usage: tomcat_restart port project"
@@ -123,13 +136,15 @@ tomcat_restart() {
 	docker exec ${ctn} /usr/bin/sed -i "s#appBase=.*#appBase=\"/home/wwwroot/${project}\"#" /usr/local/tomcat/conf/server.xml
 	# 重启
 	docker stop ${ctn}
-	local GLOBIGNORE="${webroot}/ROOT.war"
-	rm ${webroot}/* -rf
-	unset GLOBIGNORE
-	rsync -ac /home/webs/idirector/wars/${project}.war ${webroot}/ROOT.war &>/dev/null
+	#local GLOBIGNORE="${webroot}/ROOT/upload"
+	unalias mv; mv -f ${webroot}/ROOT/upload ${webroot}/ &>/dev/null
+	rm ${webroot}/ROOT -rf
+	#unset GLOBIGNORE
+	rsync -ac ${WARFILE} ${webroot}/ROOT.war &>/dev/null
 	docker start ${ctn}
 	sleep 2
 	docker ps -a|awk '/'$ctn'/{print $NF,$(NF-4),$(NF-3),$(NF-2)}'
+	test -d ${webroot}/ROOT && mv -f ${webroot}/upload ${webroot}/ROOT/ &>/dev/null || echo "error: war file not uncompress."
 }
 
 swoolechat_restart() {
