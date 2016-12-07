@@ -134,6 +134,9 @@ tomcat_restart() {
 	docker exec ${ctn} bash -c 'test -L /usr/local/tomcat/logs || rm /usr/local/tomcat/logs -rf'
 	docker exec ${ctn} bash -c 'mkdir -p /tmp/tomcat; test -L /usr/local/tomcat/logs || ln -s /tmp/tomcat /usr/local/tomcat/logs'
 	docker exec ${ctn} /usr/bin/sed -i "s#appBase=.*#appBase=\"/home/wwwroot/${project}\"#" /usr/local/tomcat/conf/server.xml
+	docker exec ${ctn} /bin/bash -c \
+	"grep -A 1 'Connector port=\"8080\"' /usr/local/tomcat/conf/server.xml | grep -q 'useBodyEncodingForURI=\"true\"' || \
+	/usr/bin/sed -i '/Connector port=\"8080\"/a\               useBodyEncodingForURI=\"true\"' /usr/local/tomcat/conf/server.xml"
 	# 重启
 	docker stop ${ctn}
 	#local GLOBIGNORE="${webroot}/ROOT/upload"
@@ -142,9 +145,10 @@ tomcat_restart() {
 	#unset GLOBIGNORE
 	rsync -ac ${WARFILE} ${webroot}/ROOT.war &>/dev/null
 	docker start ${ctn}
-	sleep 2
+	sleep 5
 	docker ps -a|awk '/'$ctn'/{print $NF,$(NF-4),$(NF-3),$(NF-2)}'
-	test -d ${webroot}/ROOT && mv -f ${webroot}/upload ${webroot}/ROOT/ &>/dev/null || echo "error: war file not uncompress."
+	test -d ${webroot}/ROOT  || ( mkdir -p ${webroot}/ROOT &>/dev/null ; echo "error: war file not uncompress,pls check it.")
+	mv -f ${webroot}/upload ${webroot}/ROOT/ &>/dev/null
 }
 
 swoolechat_restart() {
