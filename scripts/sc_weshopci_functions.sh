@@ -165,19 +165,24 @@ distr_weshopcode() {
 				echo "$(date) 打包项目 $project demo环境 $ftype 相关代码" | /usr/bin/tee -a ${log_file}
 				pack_ui $project 2>&1 | /usr/bin/tee -a ${log_file}
 			fi
+
+			# 分发到所有 app 机器
+			chown -R ftpuser:ftpuser ${webroot}/${project}demo &>/dev/null
+			echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 #-b
+
 			# 压缩日志文件
 			gzip $log_file ; local log_file="${log_file}.gz"
 			# 发邮件
-			local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,wendyguo@icatholic.net.cn,lihua@catholic.net.cn'
-			local to_list="${to_list},youngyang@icatholic.net.cn,willwan@icatholic.net.cn"
+			local to_list='virgilzhang@catholic.net.cn,annekang@catholic.net.cn,lihua@catholic.net.cn'
+			local to_list="${to_list},youngyang@icatholic.net.cn,dkding@icatholic.net.cn,willwan@icatholic.net.cn"
 			local to_list="${to_list},handersonguo@icatholic.net.cn,hansonzhang@icatholic.net.cn,zhuweiyou@icatholic.net.cn"
-			local subject="Syncing Weshop UI to project: ${project}'s SVN&DEMO has completed"
+			local subject="Syncing Weshop [PROD] ${ftype^^} to project ${project} [DEMO] has completed"
 			local content="$subject. check attachment for more details."
 			local file="$log_file"
-			#sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
+			sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
 		done
 		# 分发到所有 app 机器
-		chown -R ftpuser:ftpuser ${webroot}/${project}demo &>/dev/null
-		echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b
+		#chown -R ftpuser:ftpuser ${webroot}/${project}demo &>/dev/null
+		#echo $localkey sync_a_project_code ${project}demo | /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b
 	done
 }
