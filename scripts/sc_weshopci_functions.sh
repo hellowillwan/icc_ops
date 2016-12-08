@@ -24,6 +24,12 @@ diff_weshopcode() {
 		local ITEMS="$(echo $2 | base64 -d)"
 	fi
 
+	if [ "${PROJECTS}" = '__ALL_PROJECTS__' ];then
+		local PROJECTS="$( cat ${weshop_php_enabled_projects} | grep -v '__ALL_PROJECTS__' )"
+		#echo 'diff 不支持比较多个项目,只能一次比较一个项目,请选择具体项目进行比较.'
+		#return
+	fi
+
 	for p in ${PROJECTS} ;do
 		if echo $p | grep -q -e 'demo$' ;then
 			local weshopdir=weshopdemo
@@ -41,6 +47,7 @@ diff_weshopcode() {
 			| sed "s#^.*/home/webs/${p}##"
 		done
 		echo "ps.前端代码目录的 diff、dist 子目录中的文件存在差异应该是正常的.但...最终解释在前端开发人员."
+		echo
 	done
 }
 
