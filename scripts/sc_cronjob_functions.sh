@@ -26,6 +26,7 @@ CRON_DIR='/etc/cron.d/'
 CRON_LOG_DIR='/tmp/cut_cron_log/'
 CRON_OLDLOG_DIR='/tmp/cut_cron_log_old/'
 RUN_TIME_USER='wanlong'
+ISON='#'
 PHP_BIN='/usr/bin/php'
 PYTHON_BIN='/usr/bin/python'
 
@@ -195,9 +196,13 @@ cronjob_add() {
 		return 1
 	fi
 
-	if [ "$6" = 'hadoop' ] ;then local RUN_TIME_USER='hadoop' ; fi
+	if [ "$6" = 'hadoop' ] ; then
+		local RUN_TIME_USER='hadoop'
+	elif [ "$6" = 'default_on' ] ; then
+		local ISON=''
+	fi
 
-	echo "#${trigger_time} ${RUN_TIME_USER} . /etc/profile ; ${INTERPRETER_BIN} ${script_file} ${parameters} >> ${log_file} 2>&1 #domain_name:${domain_name} #job_owner:${user_name} #cronjob_hash:${cronjob_hash}" >> ${cron_file}
+	echo "${ISON}${trigger_time} ${RUN_TIME_USER} . /etc/profile ; ${INTERPRETER_BIN} ${script_file} ${parameters} >> ${log_file} 2>&1 #domain_name:${domain_name} #job_owner:${user_name} #cronjob_hash:${cronjob_hash}" >> ${cron_file}
 	p_ret $? "计划任务添加成功,请刷新页面查看." "计划任务添加失败,请检查后重新提交."
 }
 

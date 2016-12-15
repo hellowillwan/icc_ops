@@ -210,6 +210,11 @@ add_project ()
 			return 2
 		fi
 
+		# 添加项目默认计划任务
+		echo $localkey cronjob_add serveroperations $project_domain cronjob.php \
+		bW9kdWxlPWNyb25qb2IgY29udHJvbGxlcj1pbmRleCBhY3Rpb249cnVu KiAqICogKiAq default_on \
+		| /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b
+
 		echo "Deployer : $project_code now configured,return code:0"
 		#reload apps & proxies
 		# 不需要在这里做,cut 添加完项目后会执行 reload_nginx
