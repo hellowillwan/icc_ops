@@ -214,6 +214,7 @@ add_project ()
 		echo $localkey cronjob_add serveroperations $project_domain cronjob.php \
 		bW9kdWxlPWNyb25qb2IgY29udHJvbGxlcj1pbmRleCBhY3Rpb249cnVu KiAqICogKiAq default_on \
 		| /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b
+		# 检查方法：grep 'weshop.*module=cronjob controller=index action=run' /etc/cron.d -r
 
 		echo "Deployer : $project_code now configured,return code:0"
 		#reload apps & proxies
@@ -445,7 +446,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		source /usr/local/sbin/sc_cronjob_functions.sh
 		$cmd $p3 $p4 $p5 $p6 $p7 $p8
 		ret=$?
-		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 return code:$ret
+		logger CommonWorker $p1 $p2 $p3 $p4 $p5 $p6 $p7 $p8 return code:$ret
 		exit $ret
 		;;
 	restart_all_nginx_php)

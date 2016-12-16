@@ -179,14 +179,14 @@ check_syscfgs() {
 		local src_file=/home/wanlong/PKG/ops/centos/${file##*/}
 		local dst_file=$file
 		md5sum ${src_file}
-		func 'app*;proxy*;mongo*;host200' call command run "md5sum ${dst_file}"
+		func 'app*;proxy*;mongo*;host20*' call command run "md5sum ${dst_file}"
 		echo
 	done
 }
 
 sync_syscfgs() {
 	# 删除
-	func 'app*;proxy*;mongo*;host200' call command run 'rm /etc/security/limits.conf /etc/security/limits.d/* /etc/sysctl.conf /etc/sysctl.d/* -rf'
+	func 'app*;proxy*;mongo*;host20*' call command run 'rm /etc/security/limits.conf /etc/security/limits.d/* /etc/sysctl.conf /etc/sysctl.d/* -rf'
 	# 分发配置文件
 	for file in	/etc/security/limits.conf \
 			/etc/security/limits.d/90-nproc.conf \
@@ -195,10 +195,10 @@ sync_syscfgs() {
 	do
 		local src_file=/home/wanlong/PKG/ops/centos/${file##*/}
 		local dst_file=$file
-		func 'app*;proxy*;mongo*;host200' copyfile --file=${src_file} --remotepath=${dst_file}
+		func 'app*;proxy*;mongo*;host20*' copyfile --file=${src_file} --remotepath=${dst_file}
 	done
 	# 生效
-	func 'app*;proxy*;mongo*;host200' call command run '/sbin/sysctl -p /etc/sysctl.conf &>/dev/null'
+	func 'app*;proxy*;mongo*;host20*' call command run '/sbin/sysctl -p /etc/sysctl.conf &>/dev/null'
 }
 
 flush() {
