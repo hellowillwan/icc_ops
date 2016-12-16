@@ -107,6 +107,10 @@ pyweixin_status() {
 }
 
 tomcat_restart() {
+	if [ -z "$2" ];then
+		echo "parameter port project missing,nothing done."
+		return 1
+	fi
 	local port="$1"
 	local project="$2"
 	local webroot="/home/wwwroot/${project}"
@@ -117,8 +121,9 @@ tomcat_restart() {
 		local WARFILE="/home/webs/${project_code}/wars/${project}.war"
 		;;
 	liveplus)
-		local project_code="160523fg0262"
-		local WARFILE="/home/webs/${project_code}/java/wars/${project}.war"
+		local project_code="liveplus"
+		local WARFILE="/home/webs/${project_code}/wars/${project}.war"
+		local domainname='www.icatholiccloud.com'
 		;;
 	*)
 		echo 'bad project.nothing done.'
@@ -140,15 +145,29 @@ tomcat_restart() {
 	# 重启
 	docker stop ${ctn}
 	#local GLOBIGNORE="${webroot}/ROOT/upload"
-	unalias mv; mv -f ${webroot}/ROOT/upload ${webroot}/ &>/dev/null
+	mkdir -p /home/Backup/${project}_upload &>/dev/null
+	local upload_file_count=$(find ${webroot}/ROOT/upload/ -type f | wc -l)	# 设个阀值保护备份不被清空
+	if [ $upload_file_count -ge 50 ];then
+		rsync -ac --delete ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
+		rsync -ac --delete ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
+	else
+		rsync -ac ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
+		rsync -ac ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
+	fi
 	rm ${webroot}/ROOT -rf
+	for proxyip in 10.0.0.1 10.0.0.2 ;do
+		test -n "${domainname}" && echo "${domainname} /" | /usr/bin/gearman -h 10.0.0.200 -f "purge_${proxyip}" -b
+	done
 	#unset GLOBIGNORE
+	rsync -ac ${WARFILE} ${webroot}/ROOT.war &>/dev/null
 	rsync -ac ${WARFILE} ${webroot}/ROOT.war &>/dev/null
 	docker start ${ctn}
 	sleep 5
 	docker ps -a|awk '/'$ctn'/{print $NF,$(NF-4),$(NF-3),$(NF-2)}'
 	test -d ${webroot}/ROOT  || ( mkdir -p ${webroot}/ROOT &>/dev/null ; echo "error: war file not uncompress,pls check it.")
-	mv -f ${webroot}/upload ${webroot}/ROOT/ &>/dev/null
+	test -d ${webroot}/ROOT/upload || mkdir -p ${webroot}/ROOT/upload &>/dev/null
+	rsync -ac --delete /home/Backup/${project}_upload/ ${webroot}/ROOT/upload/ &>/dev/null
+	rsync -ac --delete /home/Backup/${project}_upload/ ${webroot}/ROOT/upload/ &>/dev/null
 }
 
 swoolechat_restart() {
