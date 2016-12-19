@@ -468,7 +468,7 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
 		;;
-	swoolechat_restart|tomcat_restart)
+	swoolechat_restart|tomcat_restart|py_cloudeye_restart)
 		if [[ "${p3}" =~ ^app[0-9]+$ ]];then
 			app="$p3"
 			port="$p4"

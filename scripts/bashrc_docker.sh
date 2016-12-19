@@ -221,6 +221,17 @@ swoolechat_status() {
 	
 }
 
+py_cloudeye_restart() {
+	local port="$1"
+	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+	if [ -z "$1" -o -z "$ctn" ];then
+		echo "parameter missing,nothing done,usage: py_cloudeye_restart port"
+		return 1
+	fi
+
+	docker restart ${ctn}
+}
+
 containers_outconnects() {
 	docker_run_a_cmd_on_all_container \
 	"ss -nt|grep -v -e '^State' -e 'LISTEN' -e '10.0.0' -e '172.18.1' -e '127.0.0.1' | wc -l" \
