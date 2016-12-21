@@ -421,7 +421,7 @@ mongo_sync () {
 			local restore_ret=$?
 			local dst_records_number=$(echo "db.getCollection('${DST_COLLECTION}').count()" \
 				| /home/60000/bin/mongo ${DST_HOST}:${DST_PORT}/${DST_DB} 2>/dev/null \
-				| grep -v -e '^MongoDB shell version' -e '^connecting to' -e '^bye')
+				| grep -P -e '^[0-9]+$')
 			local diff_number=$((${dst_records_number:-0}-$src_records_number));local diff_number=${diff_number#-}
 			local restore_times=$((${restore_times}+1))	# 计数器加1
 			if [ "${restore_ret}" -eq 0 ];then
@@ -430,6 +430,7 @@ mongo_sync () {
 			else
 				local restore_result="失败"
 				[ "$LOG" -eq 1 ] && echo "$(date)#${DIRECTION}#${DST_DB}#${DST_COLLECTION}#${dst_records_number}#restore_fail" >> $STATS_FILE
+				sleep $((6*60))	# 等网络重新连接
 			fi
 		done
 
