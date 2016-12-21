@@ -70,7 +70,8 @@ resync_connector() {
 		echo "$(eval ${DT2}) Error: supervisorctl stop ${program_name} fail."
 	fi
 
-	if /usr/bin/supervisorctl -c ${supervisorcfg} status "${program_name}:${program_name}0" | grep -q STOPPED ;then
+	# 暂时忽略 connector 状态,总是做数据的重新同步
+	#if /usr/bin/supervisorctl -c ${supervisorcfg} status "${program_name}:${program_name}0" | grep -q STOPPED ;then
 		# Dump & restore
 		source /usr/local/sbin/sc_mongodb_functions.sh
 		for col in $( grep -A 5 -e "program:${program_name}" ${supervisorcfg} \
@@ -95,8 +96,53 @@ resync_connector() {
 		else
 			echo "$(eval ${DT2}) Error: supervisorctl start ${program_name} fail."
 		fi
+	#fi
+}
+
+# 发送邮件
+sendemail () {
+	local SNDEMAIL_LOG='/tmp/sendemail.log'
+	if [ -z "$3" ] ;then
+		echo -e "\n$(date) : parameters missing." >> $SNDEMAIL_LOG 
+		return 1
 	fi
+	
+	local to_list=$1
+	local subject=$2
+	local content=$3
+	if [ -z "$4" ];then
+		local attachment=''
+	else
+		local attachment=" -F ${4} "
+	fi
+	#echo -e "\n$(date)\n${to_list}\n${subject}\n${content}" >> $SNDEMAIL_LOG
+	echo -e "\n$(date)\n${to_list}\n${subject}" >> $SNDEMAIL_LOG
+	#/usr/local/sbin/sendemail.py -s smtp.catholic.net.cn -f serveroperations@catholic.net.cn -u serveroperations@catholic.net.cn -p zd0nWmAkDH_tUwFl1wr \
+	/usr/local/sbin/sendemail.py -s smtp.icatholic.net.cn -f system.monitor@icatholic.net.cn -u system.monitor@icatholic.net.cn -p abc123 \
+		-t "$to_list" \
+		-S "$subject" \
+		-m "$content" ${attachment} 2>&1 | tee -a $SNDEMAIL_LOG 2>&1
+	local ret=$?
+	if [ $ret -eq 0 ] ;then
+		echo "$(date) : mail sent." | tee -a $SNDEMAIL_LOG
+	else
+		echo "$(date) : send email fail." | tee -a $SNDEMAIL_LOG
+	fi
+}
+
+report() {
+# 发邮件
+	local localkey=$(date '+%Y-%m-%d'|tr -d '\n'|md5sum|cut -d ' ' -f 1)
+	local to_list='merryjian@icatholic.net.cn,linwaylin@icatholic.net.cn,xiaomingyong@icatholic.net.cn'
+	local to_list="${to_list},dkding@icatholic.net.cn,willwan@icatholic.net.cn"
+	#local to_list='willwan@icatholic.net.cn'
+	local subject="Syncing Data to ICCv1RO has completed"
+	local content="$subject. check attachment for more details."
+	local file="/var/log/resync_mongoconnector.log"
+	sendemail "$to_list" "$subject" "$content" "$file" &>/dev/null
 }
 
 resync_connector mongo-connector-prod_iccv1-to-dev_iccv1
 resync_connector mongo-connector-prod_iccv1-to-dev_iccv1ro
+report
+
