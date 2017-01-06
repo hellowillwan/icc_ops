@@ -34,6 +34,9 @@ backupprod() {
 	local Bak1="${BAKROOT}${project}_Bak1" ; test -d $Bak1 || mkdir -p $Bak1 &>/dev/null
 	local Bak2="${BAKROOT}${project}_Bak2" ; test -d $Bak2 || mkdir -p $Bak2 &>/dev/null
 	local Bak3="${BAKROOT}${project}_Bak3" ; test -d $Bak3 || mkdir -p $Bak3 &>/dev/null
+	local Bak4="${BAKROOT}${project}_Bak4" ; test -d $Bak4 || mkdir -p $Bak4 &>/dev/null
+	# diff -q -r $Bak4/ $Bak3/ &>/dev/null || \		# 太慢了
+		rsync -a --delete $Bak3/ $Bak4/ &>/dev/null
 	# diff -q -r $Bak2/ $Bak3/ &>/dev/null || \		# 太慢了
 		rsync -a --delete $Bak2/ $Bak3/ &>/dev/null
 	# diff -q -r $Bak1/ $Bak2/ &>/dev/null || \
@@ -51,4 +54,16 @@ backupprod() {
 
 	# 备份完解锁
 	test -f ${lock_file} && rm ${lock_file} -f
+}
+
+backup_weshop() {
+	# 每周三发布后,在周四早上6点备份,保留3个备份
+	local project='weshop'
+	local WEBROOT='/home/webs/'
+	local BAKROOT='/home/baks/'
+	local Prod="${WEBROOT}${project}" ; test -d $Prod || mkdir -p $Prod &>/dev/null
+	local Bak="${BAKROOT}${project}_BakAt`date '+%Y-%m-%d_%H-%M-%S'`" ; test -d $Bak || mkdir -p $Bak &>/dev/null
+	rsync -a --delete $Prod/ $Bak/ &>/dev/null
+	# 保留最近3周的备份
+	local BakToDel="${BAKROOT}${project}_BakAt`date -d '-4weeks' '+%Y-%m-%d'`" ; test -d $BakToDel && rm $BakToDel -rf &>/dev/null
 }
