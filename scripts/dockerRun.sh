@@ -5,7 +5,7 @@ newContainer_for_appserver_php7() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--name=app02_icc_appserver_c01 \
+	--name=app05_icc_appserver_c01 \
 	-h appserver-c01 \
 	-v /home/webs:/home/webs \
 	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
@@ -17,11 +17,27 @@ newContainer_for_appserver_php7() {
 	/bin/bash
 }
 
+newContainer_for_appserver_php7_cronjob() {
+        docker run \
+        -d -t \
+        --restart=always \
+        --name=app05_icc_appserver_j01 \
+        -h appserver-j01 \
+        -v /home/webs:/home/webs \
+        -v /etc/app_nginx_conf:/usr/local/tengine/conf \
+        -v /etc/app_php_conf/php-7.0:/etc/app_php_conf \
+        -v /tmp:/tmp \
+        -v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
+        icc_appserver_tengine-2_php-7:latest \
+        /bin/bash
+}
+
+
 newContainer_for_appserver_php56() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--name=app02_icc_appserver_c02 \
+	--name=app05_icc_appserver_c02 \
 	-h appserver-c02 \
 	-v /home/webs:/home/webs \
 	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
@@ -38,7 +54,7 @@ newContainer_for_appserver_php54() {
 	docker run \
 	-d -t \
 	--restart=always \
-	--name=app02_icc_appserver_c03 \
+	--name=app05_icc_appserver_c03 \
 	-h appserver-c03 \
 	-v /home/webs:/home/webs \
 	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
@@ -47,6 +63,22 @@ newContainer_for_appserver_php54() {
 	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
 	-p 60083:80 \
 	icc_appserver_tengine-2.1.0_php-5.4.45:latest \
+	/bin/bash
+}
+
+newContainer_for_appserver_php54_2() {
+	docker run \
+	-d -t \
+	--restart=always \
+	--name=app05_icc_appserver_c04 \
+	-h appserver-c04 \
+	-v /home/webs:/home/webs \
+	-v /etc/app_nginx_conf:/usr/local/tengine/conf \
+	-v /etc/app_php_conf/php-5.4:/etc/app_php_conf \
+	-v /tmp/icc_appserver_c04:/tmp \
+	-v /var/log/xdebug_log_dir:/var/log/xdebug_log_dir \
+	-p 60084:80 \
+	icc_appserver_tengine-2.1.0_php-5.4.45:php-mongo-1.6.11 \
 	/bin/bash
 }
 
@@ -134,9 +166,9 @@ newContainer_for_loadrunner() {
 	-d -t \
 	--restart=always \
 	--name=loadrunner01 \
-	-h app02_loadrunner01 \
+	-h app05-loadrunner01 \
 	-v /tmp/loadrunner01:/tmp \
-	-p 8001:54345 \
+	-p 54345:54345 \
 	icc_loadrunner:latest \
 	/bin/bash
 }
@@ -154,6 +186,38 @@ newContainer_for_py_weixin_service() {
 	-p 60000:8000 \
 	${image_name}:latest \
 	/usr/bin/python /home/webs/icc/scripts/weixin/service.py --logging=None --log=/tmp/py_weixin_service.log
+}
+
+newContainer_for_py_ce_service() {
+	container_name="py_ce_service_1"
+	image_name="py_ce_service"
+	docker run \
+	-d -t \
+	--restart=always \
+	--name=${container_name} \
+	-h ${container_name//_/-} \
+	-v /tmp/${container_name}:/tmp \
+	-v /home/webs:/home/webs \
+	-p 60001:8080 \
+	${image_name}:latest \
+	/usr/bin/python /home/webs/icc_bdademo/jane_work/yesmywine/api_match.py -log_file_prefix=/tmp/${container_name}.log >> /tmp/${container_name}.log 2>&1
+	#/usr/bin/python /home/webs/icc_bdademo/jane_work/suanfa/IMG_Identify/api_match.py -log_file_prefix="/tmp/${container_name}.log"
+	#/bin/bash -c "/usr/bin/python /home/webs/icc_bdademo/jane_work/suanfa/IMG_Identify/api_match.py >> /tmp/py_ce_service.log 2&>1"
+}
+
+newContainer_for_py_ce_service2() {
+	container_name="py_ce_service_2"
+	image_name="py_ce_service"
+	docker run \
+	-d -t \
+	--restart=always \
+	--name=${container_name} \
+	-h ${container_name//_/-} \
+	-v /tmp/${container_name}:/tmp \
+	-v /home/webs:/home/webs \
+	-p 60002:8080 \
+	${image_name}:latest \
+	/usr/bin/python /home/webs/icc_bdademo/jane_work/lux/api_match.py -log_file_prefix=/tmp/${container_name}.log >> /tmp/${container_name}.log 2>&1
 }
 
 newContainer_for_testing() {
@@ -182,6 +246,67 @@ newContainer_for_dockerui() {
 newContainer_for_shipyard() {
 	docker run -d -p 9001:8080 -v /var/run/docker.sock:/var/run/docker.sock docker.io/shipyard/shipyard
 }
+
+newContainer_for_red5() {
+	docker run -d -t -p 5080:5080 -p 1935:1935 -p 8081:8081 --name=red5red5:108m13-jdk8
+}
+
+# idirector
+newContainer_for_java_ffmpeg1() {
+	docker run -d -t \
+	--restart=always \
+	--name=idirector_c01 \
+	-h idirector-c01 \
+	-v /home/webs:/home/webs \
+	-v /home/wwwroot:/home/wwwroot \
+	-v /tmp/idirector_c01:/tmp \
+	-p 60085:8080 \
+	java-ffmpeg:latest \
+	/usr/local/tomcat/bin/catalina.sh run
+}
+
+# cmdapi1
+newContainer_for_java_ffmpeg2() {
+	docker run -d -t \
+	--restart=always \
+	--name=cmdapi_c01 \
+	-h cmdapi-c01 \
+	-v /home/webs:/home/webs \
+	-v /home/wwwroot:/home/wwwroot \
+	-v /tmp/cmdapi_c01:/tmp \
+	-p 60086:8080 \
+	java-ffmpeg:latest \
+	/usr/local/tomcat/bin/catalina.sh run
+}
+
+# cmdapi2
+newContainer_for_java_ffmpeg3() {
+	docker run -d -t \
+	--restart=always \
+	--name=cmdapi_c02 \
+	-h cmdapi-c02 \
+	-v /home/webs:/home/webs \
+	-v /home/wwwroot:/home/wwwroot \
+	-v /tmp/cmdapi_c02:/tmp \
+	-p 60087:8080 \
+	java-ffmpeg:latest \
+	/usr/local/tomcat/bin/catalina.sh run
+}
+
+# liveplus
+newContainer_for_java_ffmpeg4() {
+	docker run -d -t \
+	--restart=always \
+	--name=liveplus_c01 \
+	-h liveplus-c01 \
+	-v /home/webs:/home/webs \
+	-v /home/wwwroot:/home/wwwroot \
+	-v /tmp/liveplus_c01:/tmp \
+	-p 60088:8080 \
+	java-ffmpeg:latest \
+	/usr/local/tomcat/bin/catalina.sh run
+}
+
 
 
 if [ -z "$1" ];then
