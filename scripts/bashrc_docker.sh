@@ -146,14 +146,15 @@ tomcat_restart() {
 	docker stop ${ctn}
 	#local GLOBIGNORE="${webroot}/ROOT/upload"
 	mkdir -p /home/Backup/${project}_upload &>/dev/null
-	local upload_file_count=$(find ${webroot}/ROOT/upload/ -type f | wc -l)	# 设个阀值保护备份不被清空
-	if [ $upload_file_count -ge 50 ];then
-		rsync -ac --delete ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
-		rsync -ac --delete ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
-	else
+	# 降低一致性尽最大可能保留备份的图片不被删除,注释掉下面 --delete 参数的这段
+	#local upload_file_count=$(find ${webroot}/ROOT/upload/ -type f | wc -l)	# 设个阀值保护备份不被清空
+	#if [ $upload_file_count -ge 50 ];then
+	#	rsync -ac --delete ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
+	#	rsync -ac --delete ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
+	#else
 		rsync -ac ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
 		rsync -ac ${webroot}/ROOT/upload/ /home/Backup/${project}_upload/ &>/dev/null
-	fi
+	#fi
 	rm ${webroot}/ROOT -rf
 	for proxyip in 10.0.0.1 10.0.0.2 ;do
 		test -n "${domainname}" && echo "${domainname} /" | /usr/bin/gearman -h 10.0.0.200 -f "purge_${proxyip}" -b
@@ -166,8 +167,8 @@ tomcat_restart() {
 	docker ps -a|awk '/'$ctn'/{print $NF,$(NF-4),$(NF-3),$(NF-2)}'
 	test -d ${webroot}/ROOT  || ( mkdir -p ${webroot}/ROOT &>/dev/null ; echo "error: war file not uncompress,pls check it.")
 	test -d ${webroot}/ROOT/upload || mkdir -p ${webroot}/ROOT/upload &>/dev/null
-	rsync -ac --delete /home/Backup/${project}_upload/ ${webroot}/ROOT/upload/ &>/dev/null
-	rsync -ac --delete /home/Backup/${project}_upload/ ${webroot}/ROOT/upload/ &>/dev/null
+	rsync -ac /home/Backup/${project}_upload/ ${webroot}/ROOT/upload/ &>/dev/null
+	rsync -ac /home/Backup/${project}_upload/ ${webroot}/ROOT/upload/ &>/dev/null
 }
 
 swoolechat_restart() {
@@ -205,6 +206,17 @@ swoolechat_restart() {
 	docker exec -i ${ctn} bash -c '/usr/local/tengine/sbin/nginx -s reload' # &>/dev/null
 }
 
+py_cloudeye_restart() {
+	local port="$1"
+	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
+	if [ -z "$1" -o -z "$ctn" ];then
+		echo "parameter missing,nothing done,usage: py_cloudeye_restart port"
+		return 1
+	fi
+	
+	docker restart ${ctn}
+}
+
 swoolechat_status() {
 	local port="$1"
 	local ctn=$(docker ps -a|grep "${port}->" 2>/dev/null | awk '{print $NF}')
@@ -219,17 +231,6 @@ swoolechat_status() {
 	local process_number=$(docker exec ${ctn} ps -ef|grep -e 'swoolchat/webim_server.php'|wc -l)
 	echo -n $instance_stime_project process_number:$process_number connections:$connections
 	
-}
-
-py_cloudeye_restart() {
-	local port="$1"
-	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
-	if [ -z "$1" -o -z "$ctn" ];then
-		echo "parameter missing,nothing done,usage: py_cloudeye_restart port"
-		return 1
-	fi
-
-	docker restart ${ctn}
 }
 
 containers_outconnects() {
