@@ -33,6 +33,15 @@ server {
 		access_log off;
 	}
 
+	# 避免 /zhibohoutai .html Base 被替换
+	location ~* ^/zhibohoutai {
+		proxy_next_upstream http_502 error invalid_header;
+		proxy_set_header Host $host;
+		proxy_set_header X-Real-IP  $remote_addr;
+		proxy_pass http://$myapppool;
+	}
+
+	# 静态资源默认配置: 替换 Base + 允许跨域请求 + 缓存配置
 	location ~* \.(jpg|jpeg|gif|bmp|png|ico|css|js|flv|ogg|mp3|mp4|swf|webm|ogv|avi|wma|wmv|ttf|eot|otf|woff|svg|txt|json|html)$ {
 		# 替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
 		proxy_set_header Accept-Encoding '';
@@ -62,8 +71,8 @@ server {
 		deny  all;
 	}
 
+	# 对此目录下的动态请求 替换 Base，但其中的静态资源执行前面静态资源的配置
 	location ~* /(zhibo|zhibo2)/ {
-		# 预期这类目录下只有静态文件,替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
 		proxy_set_header Accept-Encoding '';
 		sub_filter '<base href="/' '<base href="http://PROJECT_STATIC_DOMAIN/';
 		sub_filter_last_modified on;
@@ -74,8 +83,8 @@ server {
 		proxy_pass http://$myapppool;
 	}
 
+	# 对此目录下的动态请求 替换 Base，但其中的静态资源执行前面静态资源的配置
 	location ~* /html/m2/ {
-		# 预期这类目录下只有静态文件,替换 静态页面中的 Base ,固定字符串替换,和前端约定 html文件 中必须有如下字符串,这里只添加该项目的静态资源域名.
 		proxy_set_header Accept-Encoding '';
 		sub_filter '<base href="/' '<base href="http://PROJECT_STATIC_DOMAIN/';
 		sub_filter_last_modified on;
