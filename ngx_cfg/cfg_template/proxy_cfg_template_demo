@@ -6,7 +6,7 @@ server {
 	charset UTF-8;
 	access_log  /usr/local/nginx/logs/$host.access.log  main;
 
-	include global.conf;
+	include global_fordemo.conf;
 
 	location / {
 		proxy_next_upstream http_502 error invalid_header;
