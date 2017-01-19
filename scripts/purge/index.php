@@ -19,7 +19,7 @@ require('./accounts.php');
 
 if (	   !isset($_SERVER['PHP_AUTH_USER']) 
 	|| !isset($_SERVER['PHP_AUTH_PW'])
-	|| array_search(md5($_SERVER['PHP_AUTH_PW']),$accounts_array) !== $_SERVER['PHP_AUTH_USER'] )
+	|| $accounts_array[$_SERVER['PHP_AUTH_USER']] !== md5($_SERVER['PHP_AUTH_PW']) )
 {
 	Header("WWW-Authenticate: Basic realm=\"Login\"");
 	Header("HTTP/1.0 401 Unauthorized");
