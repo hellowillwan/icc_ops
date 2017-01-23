@@ -52,8 +52,8 @@ sendemail () {
 	fi
 	#echo -e "\n$(date)\n${to_list}\n${subject}\n${content}" >> $SNDEMAIL_LOG
 	echo -e "\n$(date)\n${to_list}\n${subject}" >> $SNDEMAIL_LOG
-	#/usr/local/sbin/sendemail.py -s smtp.catholic.net.cn -f serveroperations@catholic.net.cn -u serveroperations@catholic.net.cn -p zd0nWmAkDH_tUwFl1wr \
-	/usr/local/sbin/sendemail.py -s smtp.icatholic.net.cn -f system.monitor@icatholic.net.cn -u system.monitor@icatholic.net.cn -p abc123 \
+	#/usr/local/sbin/sendemail.py -s smtp.icatholic.net.cn -f system.monitor@icatholic.net.cn -u system.monitor@icatholic.net.cn -p abc123 \
+	/usr/local/sbin/sendemail.py -s smtp.catholic.net.cn -f serveroperations@catholic.net.cn -u serveroperations@catholic.net.cn -p brBdMOFRC6eJ44Bc4E2C \
 		-t "$to_list" \
 		-S "$subject" \
 		-m "$content" ${attachment} 2>&1 | tee -a $SNDEMAIL_LOG 2>&1
@@ -422,6 +422,13 @@ while read p1 p2 p3 p4 p5 p6 p7 p8 p9;do
 		source /usr/local/sbin/sc_mongodb_functions.sh
 		$cmd $p3
 		ret=$?
+		logger CommonWorker $p1 $p2 $p3 return code:$ret
+		exit $ret
+		;;
+	restart_redis_replset)
+		/usr/bin/func "$p3" call command run 'if grep -q "CentOS Linux release 7" /etc/redhat-release ; then systemctl restart redis.service;systemctl status redis.service ; else /etc/init.d/redis restart; /etc/init.d/redis status ;fi'
+		ret=$?
+		/usr/local/sbin/check_services.sh redis 2>&1
 		logger CommonWorker $p1 $p2 $p3 return code:$ret
 		exit $ret
 		;;
