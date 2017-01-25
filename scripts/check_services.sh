@@ -113,6 +113,31 @@ REDIS='
 
 10.0.0.31:6379
 10.0.0.32:6379
+
+10.0.0.31:7001
+10.0.0.32:7001
+
+10.0.0.24:6379
+'
+
+MONGODBS='
+10.0.0.40:40000
+10.0.0.41:40000
+
+10.0.0.24:40102
+
+
+10.0.0.30:60000
+10.0.0.31:60000
+10.0.0.32:60000
+
+10.0.0.30:57017
+10.0.0.31:57017
+10.0.0.32:57017
+
+10.0.0.40:60000
+10.0.0.41:60000
+10.0.0.24:6379
 '
 
 MONGODBS='
@@ -139,9 +164,7 @@ MONGODBS='
 10.0.0.52:60000
 
 10.0.0.24:60101
-10.0.0.24:60102
 10.0.0.24:60201
-10.0.0.24:60202
 
 10.0.0.200:27017
 '
@@ -310,10 +333,15 @@ redis() {
 		echo info | ${REDIS_CLI} -c -h ${ip_port%%:*} -p ${ip_port##*:} | grep \
 		-e used_memory_human \
 		-e used_memory_peak_human \
+		-e last_save \
+		-e bgsave_in_progress \
+		-e last_bgsave_time \
 		-e 'db0:keys' \
 		-e master_host \
 		-e master_port \
-		-e slave0
+		-e slave0 \
+		| tr -d '\r' \
+		| awk '{ if ( $0 ~ /last_save_time:/ ) {n=split($0,a,'/:/');t=systime()-a[2];print $0,"距离现在:",t,"秒" } else {print $0}}'
 		echo
 	done
 }
