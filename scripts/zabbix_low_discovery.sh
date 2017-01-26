@@ -9,7 +9,8 @@
 
 redis() {
 	ps -ef|grep -v -e grep|grep -q 'bin.redis' || return 1
-	local ports=$(ps -ef|grep -v -e grep|grep -o 'bin.redis.*'|grep -P -o ':[0-9]+ '|tr -d ':|\t| ')
+	#local ports=$(ps -ef|grep -v -e grep|grep -o 'bin.redis.*'|grep -P -o ':[0-9]+ '|tr -d ':|\t| ')
+	local ports=$(ps -ef|grep -v -e grep|grep -o 'bin.redis.*'|sort -u|awk '{ if ($0 ~ /:[0-9]+/) {n=split($0,a,/:/); print a[2] } else {print 6379} }')
 	echo '{"data":['
 	if [ -z "$ports" ];then
 		echo -e " { \"{#REDISPORT}\" : \"6379\" } "
