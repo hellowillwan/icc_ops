@@ -17,6 +17,7 @@ redis() {
 	else
 		local multi_items=''
 		for port in $ports ;do
+			[[ $port =~ [0-9]+ ]] && \
 			local multi_items="${multi_items} { \"{#REDISPORT}\" : \"${port}\" },"
 		done
 		echo ${multi_items}|sed 's/,$//'
