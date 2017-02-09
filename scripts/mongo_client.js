@@ -1,4 +1,4 @@
-#!/home/60000/bin/mongo --nodb
+#!/home/60000/bin/mongo --quiet
 /*
  * 几个操作 mongodb 的工具函数
  *
