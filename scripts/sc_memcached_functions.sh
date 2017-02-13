@@ -57,7 +57,7 @@ restart_memcached() {
 	fi
 
 	#start memcached
-	sudo /usr/bin/memcached -d -p ${PORT} -u memcached -m ${SIZE} -c 65536 -P ${PIDFILE} -l ${IP}
+	sudo /usr/bin/memcached -d -p ${PORT} -u memcached -m ${SIZE} -b 2048 -c 65536 -P ${PIDFILE} -l ${IP}
 	#check
 	if [ $? -eq 0 ];then
 		echo "$(eval $DT2) Start memcached ${IP}:${PORT} OK."
