@@ -174,7 +174,8 @@ tomcat_restart() {
 swoolechat_restart() {
 	local port="$1"
 	local project="$2"
-	local sw_param=" -a /home/webs/$project/swoolchat"
+	local swdir_name='swoolechat';if [ $project = 'weshop' ] ;then local swdir_name='swoolchat';fi
+	local sw_param=" -a /home/webs/$project/$swdir_name"
 	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
 	#if 
 	#if [ "$port" = '9503' ];then
@@ -197,8 +198,8 @@ swoolechat_restart() {
 	fi
 	
 	docker restart ${ctn}
-	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/swoolchat/webim_server.php $sw_param >> /tmp/swoolechat.log 2>&1 &" &
-	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoolchat/webim_server.php'|grep -v -e grep"
+	docker exec ${ctn} bash -c ". /etc/profile;php /home/webs/${project}/${swdir_name}/webim_server.php $sw_param >> /tmp/swoolechat.log 2>&1 &" &
+	docker exec ${ctn} bash -c "ps -ef|grep '/home/webs/${project}/swoole\?chat/webim_server.php'|grep -v -e grep"
 	docker exec -i ${ctn} sed -i 's|\(^[ |\t]*_use_systemctl=1$\)|#\1|' /etc/init.d/functions
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm restart' #&>/dev/null
 	docker exec -i ${ctn} bash -c '/etc/init.d/php-fpm status' #&>/dev/null
@@ -224,11 +225,11 @@ swoolechat_status() {
 		echo "parameter missing,nothing done,usage: swoolechat_restart port project"
 		return 1
 	fi
-	#docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
-	local instance_stime_project=$(docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoolchat/webim_server.php'|grep -e manager|grep -v -e grep" \
+	#docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoole\?chat/webim_server.php'|grep -e manager|grep -v -e grep" |tr -d '\n'
+	local instance_stime_project=$(docker exec -i ${ctn} bash -c "ps -ef|grep -e 'swoole\?chat/webim_server.php'|grep -e manager|grep -v -e grep" \
 	| awk '{gsub('/.home.webs.\|.swoo.*$/',"",$9);print $5,$9}')
 	local connections=$(docker exec ${ctn} ss -nt|grep 9503|wc -l)
-	local process_number=$(docker exec ${ctn} ps -ef|grep -e 'swoolchat/webim_server.php'|wc -l)
+	local process_number=$(docker exec ${ctn} ps -ef|grep -e 'swoole\?chat/webim_server.php'|wc -l)
 	echo -n $instance_stime_project process_number:$process_number connections:$connections
 	
 }
