@@ -12,6 +12,9 @@ sc() {
 		dlna)
 			local services='minidlna'
 			;;
+		ssh|sshd)
+			local services='ssh'
+			;;
 		*)
 			echo -e "Usage: ${FUNCNAME[0]} service_name [start|stop|restart]\n"
 			return
@@ -39,7 +42,7 @@ sc() {
 	for s in $services ;do
 		test -n "$action1" && (sudo systemctl $action1 $s)
 		test -n "$action2" && (sudo systemctl $action2 $s; if [ "$action2" = stop ];then sudo killall $s ;fi;sleep 1)
-		sudo systemctl status $s;
+		sudo systemctl -l --no-pager status $s;
 		sudo ps -ef | grep -e $s | grep -v -e grep
 		echo
 	done
