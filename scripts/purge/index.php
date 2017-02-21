@@ -215,6 +215,8 @@ if(!empty($_POST)){
 		//处理URLs并返回结果
 		//$result = Proxy::purgecache($url_array,$_POST['type']);
 		$result = Proxy::purgecache($url_array);
+		// clear global cache for proxy_cache unsupport variable before 1.7.9
+		Proxy::purgecache(array('dir' => array('http://iwebsite2.umaman.com/')));
 		//输出结果
 		$output .= '<div id=urls>';
 		$output .= "清除结果如下：";
