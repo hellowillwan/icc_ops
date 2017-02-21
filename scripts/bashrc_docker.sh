@@ -174,7 +174,7 @@ tomcat_restart() {
 swoolechat_restart() {
 	local port="$1"
 	local project="$2"
-	local swdir_name='swoolechat';if [ $project = 'weshop' ] ;then local swdir_name='swoolchat';fi
+	local swdir_name='swoolechat';if [[ $project =~ 'weshop' ]] ;then local swdir_name='swoolchat';fi
 	local sw_param=" -a /home/webs/$project/$swdir_name"
 	local ctn=$(docker ps -a|grep "${port}->"|awk '{print $NF}')
 	#if 
