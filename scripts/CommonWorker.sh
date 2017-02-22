@@ -210,7 +210,11 @@ add_project ()
 			return 2
 		fi
 
-		# 添加项目默认计划任务
+		# 添加项目(正式环境)默认计划任务
+		# 默认计划任务的执行逻辑是:每分钟执行一次,加载数据库里的计划任务配置根据周期执行并记录日志,
+		# 对一个具体项目来说,由于正式和demo环境访问的是同一个数据库,所以如果同时配置正式和demo环境的默认计划任务,
+		# 则数据库里的计划任务实际会执行两次.这里设定只添加正式环境(代码经过测试)的默认计划任务,要调试就把代码部署到正式环境.
+		echo "$project_code" | grep -q -e 'demo$' || \
 		echo $localkey cronjob_add serveroperations $project_domain cronjob.php \
 		bW9kdWxlPWNyb25qb2IgY29udHJvbGxlcj1pbmRleCBhY3Rpb249cnVu KiAqICogKiAq default_on \
 		| /usr/bin/gearman -h 10.0.0.200 -f CommonWorker_10.0.0.200 -b

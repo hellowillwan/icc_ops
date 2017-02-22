@@ -175,7 +175,8 @@ cronjob_add() {
 		script_dir=$(get_dir_from_hostname ${domain_name});
 		script_file=$(echo "$3"|sed -e 's#^.\?/##')	#去掉开头的./或/
 		script_file="${script_dir}/scripts/${script_file}"
-		if [ ! -f "${script_file}" ];then echo "脚本文件没找到,添加失败.";return 1;fi	#检查脚本文件
+		# 为新创建的项目添加默认计划任务时 脚本文件都是不存在的 所以去掉这个检查
+		#if [ ! -f "${script_file}" ];then echo "脚本文件没找到,添加失败.";return 1;fi	#检查脚本文件
 		#区别php、python脚本
 		if echo "${script_file}"|grep -q -e '\.php$';then
 			INTERPRETER_BIN=${PHP_BIN}
