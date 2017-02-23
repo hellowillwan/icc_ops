@@ -38,6 +38,7 @@ $output = "<html>
 @$action = $_GET['act'];
 switch ($action) {
 case "upload":
+	if (empty($_FILES['attachment'])) {header('Location: ' . $_SERVER['PHP_SELF']);}
 	//处理附件上传
 	if ( $_FILES['attachment']['error'] == 0 ) {
 		if ( move_uploaded_file($_FILES['attachment']['tmp_name'],$upload_dir.$_FILES['attachment']['name']) ) {
