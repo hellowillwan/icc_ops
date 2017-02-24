@@ -104,6 +104,15 @@ sync_bashrc_to_apps() {
 	check_apps_bashrc
 }
 
+check_containers_resolv() {
+	md5sum /etc/resolv.conf
+	echo
+	func 'app*' call command run \
+	". ~/.bashrc; \
+	docker_run_a_cmd_on_all_container 'md5sum /etc/resolv.conf' \
+	| grep -v -e ':' -e '^\$' | sort | uniq -c"
+}
+
 check_all_resolv() {
 	md5sum /etc/resolv.conf
 	func "proxy*;app*;mongo*;host20" call command run 'md5sum /etc/resolv.conf'
@@ -127,6 +136,15 @@ check_containers_outgoingconnections() {
 	". ~/.bashrc; \
 	docker_run_a_cmd_on_all_container \"ss -nt|grep -v -e '^State' -e 'LISTEN' -e '10.0.0' -e '172.18.1' -e '127.0.0.1' | wc -l\" \
 	| tr '\n' ' '"
+}
+
+check_containers_outconn() {
+	local url='https://api.weixin.qq.com/sns/oauth2/access_token'
+	echo "checking containers fetch url : $url"
+	func 'app*' call command run \
+	". ~/.bashrc; \
+	docker_run_a_cmd_on_all_container 'curl -sI $url' \
+	|grep HTTP|sort |uniq -c"
 }
 
 sync_zabbix_cfg_bins() {
