@@ -16,7 +16,6 @@ alias hive='/home/hadoop/hive/bin/hive'
 alias rm='rm -i'
 alias mv='mv -i'
 alias vihu='vim /home/hadoop/hue/desktop/conf/pseudo-distributed.ini'
-alias hc='history -c;clear'
 goto () {
 	if [ -z $1 ];then
 		echo "IP parameter missing."
