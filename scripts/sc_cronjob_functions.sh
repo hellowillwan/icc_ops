@@ -99,7 +99,10 @@ mv_old_logs() {
 			#不超过10个
 			:
 		else
-			ls ${log_files_pattern}|sort -nr|tail -n $((${num_all}-10)) | xargs -I '{}' mv -f {} ${CRON_OLDLOG_DIR} &>/dev/null
+			# move
+			#ls ${log_files_pattern}|sort -nr|tail -n $((${num_all}-10)) | xargs -I '{}' mv -f {} ${CRON_OLDLOG_DIR} &>/dev/null
+			# rm
+			ls ${log_files_pattern}|sort -nr|tail -n $((${num_all}-10)) | xargs -I '{}' -n 1 -P 8 rm -f {}
 		fi
 	done
 
