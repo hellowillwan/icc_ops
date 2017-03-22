@@ -86,12 +86,30 @@ PY_WX_SRV='
 10.0.0.13:60000
 10.0.0.14:60000
 '
+PY_CE_SRV='
+10.0.0.14:60001
+10.0.0.14:60002
+10.0.0.14:60003
+'
 SWCHAT_SRV='
 10.0.0.10:9503
 10.0.0.11:9503
 10.0.0.12:9503
 10.0.0.13:9503
 10.0.0.14:9503
+'
+LIVEPLUS_SRV='
+10.0.0.14:60088
+'
+IDIRECTOR_SRV='
+10.0.0.14:60085
+'
+CMDAPI_SRV='
+10.0.0.14:60086
+10.0.0.14:60087
+'
+RED5_SRV='
+10.0.0.14:5080
 '
 
 MEMCACHEDS='
@@ -116,28 +134,6 @@ REDIS='
 
 10.0.0.31:7001
 10.0.0.32:7001
-
-10.0.0.24:6379
-'
-
-MONGODBS='
-10.0.0.40:40000
-10.0.0.41:40000
-
-10.0.0.24:40102
-
-
-10.0.0.30:60000
-10.0.0.31:60000
-10.0.0.32:60000
-
-10.0.0.30:57017
-10.0.0.31:57017
-10.0.0.32:57017
-
-10.0.0.40:60000
-10.0.0.41:60000
-10.0.0.24:6379
 '
 
 MONGODBS='
@@ -253,6 +249,27 @@ pyweixin() {
 		echo -en "${ip_port}\t"
 		curl -s -o /dev/null -D - http://${ip_port}|head -n 1
 		echo
+	done
+}
+
+pycloudeye() {
+	displayheader "Checking Python-CloudEye-Service"
+	for ip_port in ${PY_CE_SRV};do
+		echo -en "${ip_port}\t"
+		curl -s -o /dev/null -D - http://${ip_port}|head -n 1
+		echo
+	done
+}
+
+tomcat() {
+	for srv_name in liveplus idirector cmdapi red5;do
+		displayheader "Checking Tomcat-Service ${srv_name}"
+		local ip_port_list="${srv_name^^}_SRV"
+		for ip_port in ${!ip_port_list};do
+			echo -en "${ip_port}\t"
+			curl -s -o /dev/null -D - http://${ip_port}|head -n 1
+			echo
+		done
 	done
 }
 
@@ -458,6 +475,7 @@ if [ -z "$1" ] ;then
 	php
 	swoolechat
 	httpd
+	tomcat
 	memcached
 	redis
 	gearmand
@@ -470,9 +488,15 @@ elif [ "$1" = 'web' -o "$1" = "nginx_php" ];then
 	php
 	pyweixin
 	swoolechat
+	tomcat
+	pycloudeye
 	proxy_nolive_upstreams
 elif [ "$1" = 'sw' -o "$1" = "swoolechat" ];then
 	swoolechat
+elif [ "$1" = 'tomcat' -o "$1" = "java" ];then
+	tomcat
+elif [ "$1" = 'pyce' -o "$1" = "py_ce" ];then
+	pycloudeye
 elif [ "$1" = 'php' -o "$1" = "php_stat" ];then
 	php_terminating
 	php_tooslow
