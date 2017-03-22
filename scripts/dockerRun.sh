@@ -220,6 +220,21 @@ newContainer_for_py_ce_service2() {
 	/usr/bin/python /home/webs/icc_bdademo/jane_work/lux/api_match.py -log_file_prefix=/tmp/${container_name}.log >> /tmp/${container_name}.log 2>&1
 }
 
+newContainer_for_py_ce_service3() {
+	container_name="py_ce_service_3"
+	image_name="py_ce_service"
+	docker run \
+	-d -t \
+	--restart=always \
+	--name=${container_name} \
+	-h ${container_name//_/-} \
+	-v /tmp/${container_name}:/tmp \
+	-v /home/webs:/home/webs \
+	-p 60003:8080 \
+	${image_name}:latest \
+	/usr/bin/python /home/webs/icc_bdademo/jane_work/OPENCV/api_match.py -log_file_prefix=/tmp/${container_name}.log >> /tmp/${container_name}.log 2>&1
+}
+
 newContainer_for_testing() {
 	if [ -z "$2" ] ; then
 		echo usage: newContainer_ container_name image_name
@@ -262,7 +277,7 @@ newContainer_for_java_ffmpeg1() {
 	-v /tmp/idirector_c01:/tmp \
 	-p 60085:8080 \
 	java-ffmpeg:latest \
-	/usr/local/tomcat/bin/catalina.sh run
+	/bin/tini -- /usr/local/tomcat/bin/catalina.sh run
 }
 
 # cmdapi1
@@ -276,7 +291,7 @@ newContainer_for_java_ffmpeg2() {
 	-v /tmp/cmdapi_c01:/tmp \
 	-p 60086:8080 \
 	java-ffmpeg:latest \
-	/usr/local/tomcat/bin/catalina.sh run
+	/bin/tini -- /usr/local/tomcat/bin/catalina.sh run
 }
 
 # cmdapi2
@@ -290,7 +305,7 @@ newContainer_for_java_ffmpeg3() {
 	-v /tmp/cmdapi_c02:/tmp \
 	-p 60087:8080 \
 	java-ffmpeg:latest \
-	/usr/local/tomcat/bin/catalina.sh run
+	/bin/tini -- /usr/local/tomcat/bin/catalina.sh run
 }
 
 # liveplus
@@ -304,7 +319,7 @@ newContainer_for_java_ffmpeg4() {
 	-v /tmp/liveplus_c01:/tmp \
 	-p 60088:8080 \
 	java-ffmpeg:latest \
-	/usr/local/tomcat/bin/catalina.sh run
+	/bin/tini -- /usr/local/tomcat/bin/catalina.sh run
 }
 
 
