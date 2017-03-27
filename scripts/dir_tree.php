@@ -1,9 +1,11 @@
 <?php
 
 function dir_tree($directory) {
-	$mydir = dir($directory);
+	//$mydir = dir($directory);
 	static $loopcount , $output_str; $output_str .= "<ul>";
-	while($file = $mydir->read()) {
+	$files = scandir($directory);
+	//while($file = $mydir->read()) {
+	foreach( $files as $file ) {
 		if ( ($file != ".") && ($file != "..") && ($file != ".svn") && ( $file != "node_modules" ) ) {
 			if((is_dir("$directory/$file"))) {
 				//$output_str .= "<a href='$directory/$file'><li><font color=\"#3366ff\"><b>$file</b></font></li></a>\n";
@@ -19,7 +21,7 @@ function dir_tree($directory) {
 		}
 	}
 	$output_str .= "</ul>";
-	$mydir->close();
+	//$mydir->close();
 	return $output_str;
 }
 
