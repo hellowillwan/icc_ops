@@ -30,6 +30,7 @@ LINUXS='
 
 HTTPD='
 211.152.60.36
+211.152.60.34
 211.152.60.33
 '
 
@@ -228,7 +229,7 @@ httpd() {
 	displayheader 'Checking Httpd'
 	for ip in ${HTTPD} ;do
 		echo -en "$ip\t"
-		curl -m 3 http://${ip}/server-status 2>/dev/null |grep -e 'idle workers'
+		curl -D - -m 3 http://${ip}/server-status 2>/dev/null |grep -e 'idle workers' -e '^HTTP' -e '^Server'
 		echo
 	done
 }
