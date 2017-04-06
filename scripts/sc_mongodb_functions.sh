@@ -441,10 +441,10 @@ mongo_sync () {
 		echo -e "导入 ${DST_ENV} 环境 ${DST_DB}.${DST_COLLECTION} : 集合不存在或为空,无法导入\n"
 	fi
 
-	if [ "$LOG" -eq 1 ] ;then
+	#if [ "$LOG" -eq 1 ] ;then
 		# 启动supervisor mongo-connector
-		/usr/bin/supervisorctl -c /etc/supervisor.conf start "${proc_name}" &>/dev/null
-	fi
+		#/usr/bin/supervisorctl -c /etc/supervisor.conf start "${proc_name}" &>/dev/null
+	#fi
 }
 
 # 检查 同步Mongdb集合 的状态(双向：线上到内网、内网到线上)
@@ -458,7 +458,8 @@ check_mongo_sync() {
 	local DB="$2"
 	local COLLECTIONS=$(echo -n "$3"|base64 -d 2>/dev/null|sort|uniq|grep -v -P '^[ |\t]*$')
 	local STATS_FILE='/var/log/mongo_sync.stats'
-	awk -F'#' "/#${DIRECTION}#${DB}#${COLLECTIONS}#/{print \$NF}" $STATS_FILE |tail -n 1
+	#awk -F'#' "/#${DIRECTION}#${DB}#${COLLECTIONS}#/{print \$NF}" $STATS_FILE |tail -n 1
+	awk -F'#' "/#${DIRECTION}#.*#${COLLECTIONS}#/{print \$1,\"#\",\$NF}" $STATS_FILE |tail -n 1
 }
 
 # 复制Mongdb集合到另一个集合
