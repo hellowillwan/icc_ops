@@ -319,7 +319,7 @@ newContainer_for_java_ffmpeg4() {
 	-v /tmp/liveplus_c01:/tmp \
 	-p 60088:8080 \
 	java-ffmpeg:latest \
-	/bin/tini -- /usr/local/tomcat/bin/catalina.sh run
+	/bin/tini -- /bin/bash -c "/usr/local/tomcat/bin/catalina.sh run &> /usr/local/tomcat/logs/catalina.out"
 }
 
 
