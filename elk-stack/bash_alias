@@ -1,0 +1,28 @@
+
+alias aliredis='/usr/bin/redis-cli -h r-xxxxxxxxxxxxxxxx.redis.rds.aliyuncs.com -p 6379 -n 101 -a xxxxxxxxxx'
+
+# 删除 101 应用日志库的 key, 以免超过 2GB 单实例限制
+# for k in $(echo -n 'keys *'| aliredis -n 101) ;do echo -n "del $k" | aliredis -n 101;done
+
+function showredis() {
+    echo 'logstash'
+    echo 'llen logstash' | /usr/bin/redis-cli -p 16384
+    echo
+    echo 'RoomService-sta'
+    echo 'llen RoomService-sta' | /usr/bin/redis-cli -p 16384 -n 4
+    echo
+    echo 'info memory' | /usr/bin/redis-cli -p 16384 | grep used_memory_human
+    echo 'info keyspace' | /usr/bin/redis-cli -p 16384
+    echo
+}
+
+# 统计索引状态
+# showesindex |awk '{++a[$1]}END{for (s in a) print s,a[s]}'
+
+delesindex() {
+    test -n "$1" && index="$1" || return 1
+    curl -sv -X DELETE http://127.0.0.1:9200/$index
+}
+
+alias showesindex='curl -s http://127.0.0.1:9200/_cat/indices?v'
+

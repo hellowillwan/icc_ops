@@ -1,0 +1,30 @@
+# This file is where you define your pipelines. You can define multiple.
+# For more information on multiple pipelines, see the documentation:
+#   https://www.elastic.co/guide/en/logstash/current/multiple-pipelines.html
+
+- pipeline.id: access-logs
+  path.config: "/etc/logstash/conf.d/access-logs.conf"
+- pipeline.id: mis
+  path.config: "/etc/logstash/conf.d/mis.conf"
+- pipeline.id: mis-aliredis
+  path.config: "/etc/logstash/conf.d/mis_aliredis.conf"
+- pipeline.id: mis_event
+  path.config: "/etc/logstash/conf.d/mis_event.conf"
+- pipeline.id: mis_cloud
+  path.config: "/etc/logstash/conf.d/mis_cloud.conf"
+- pipeline.id: jiaoxue
+  path.config: "/etc/logstash/conf.d/jiaoxue.conf"
+- pipeline.id: roomservice
+  path.config: "/etc/logstash/conf.d/RoomService.conf"
+- pipeline.id: apiv24
+  path.config: "/etc/logstash/conf.d/apiv24.conf"
+- pipeline.id: liveapi
+  path.config: "/etc/logstash/conf.d/liveapi.conf"
+- pipeline.id: payment
+  path.config: "/etc/logstash/conf.d/payment.conf"
+- pipeline.id: mobileAppLog
+  path.config: "/etc/logstash/conf.d/mobileAppLog.conf"
+- pipeline.id: platformLog
+  path.config: "/etc/logstash/conf.d/platform.conf"
+- pipeline.id: alicdnaccesslog
+  path.config: "/etc/logstash/conf.d/aliCDNaccessLogs.conf"
