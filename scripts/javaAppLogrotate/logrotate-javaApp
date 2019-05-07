@@ -1,0 +1,8 @@
+/mnt/tomcat/tomcat*/logs/catalina.out /mnt/tomcat/tomcat79-misevent/logs/misevent_jar.log /mnt/tomcat/yimi_mis_cloud/*.log /mnt/tomcat/yimi_jiaoxue_cloud/*/target/*.log /mnt/tomcat/yimi_jiaoxue_cloud/*.log {
+    copytruncate
+    daily
+    rotate 7
+    dateext
+    compress
+    missingok
+}
