@@ -50,6 +50,11 @@ docker_stats() {
 	docker stats `docker ps|awk '{print $NF}'|grep -v -e '^NAMES'|tr '\n' ' '`
 }
 
+
+# docker 查看容器日志
+# docker logs -f --tail 1000 sentry-web-01
+
+
 chownmod_tmpdir() {
 	chown -R nobody.nobody /tmp/icc_appserver_c*
 	find /tmp/icc_appserver_c* -type d -exec chmod -R 755 {} \;
