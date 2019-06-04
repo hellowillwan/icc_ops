@@ -1,0 +1,56 @@
+---
+- hosts: hostorgroup
+  remote_user: willwan
+  tasks:
+  - name: 部署 vimrc 到家目录
+    copy:
+      content: |
+        set tabstop=4
+        set shiftwidth=4
+        set expandtab
+        set hlsearch
+        set number
+        syntax on
+        set autoindent
+        set pastetoggle=<F7>
+        "colorscheme molokai
+      dest: ~willwan/.vimrc
+      mode: 0600
+      owner: willwan
+      group: willwan
+  - name: 部署脚本 .setps.sh
+    copy:
+      content: |
+        # 找到 ip 命令路径
+        if [ -x /sbin/ip ];then
+            ipcmd='/sbin/ip'
+        elif [ -x /usr/sbin/ip ];then
+            ipcmd='/usr/sbin/ip'
+        else
+            theip='ip_cmd_not_found'
+        fi
+
+        if [ "$theip" != 'ip_cmd_not_found' ];then
+            # 获取网关 ip, 用本机绑定的 ip (通常有多个) 与网关 ip 进行匹配，选择符合的那个ip 配置到 bahs 提示符
+            gatewayip="$(${ipcmd} r l | grep 'default via' | awk '{print $3}')"
+            gatewayip="${gatewayip%\.*}"
+            gatewayip="${gatewayip%\.*}"
+            for ip in $(${ipcmd} r l | awk '/src .*/{print $NF}');do
+                if [[ "${ip}" =~ ${gatewayip}.*  ]];then
+                    theip="$ip"
+                    break
+                fi
+            done
+        fi
+
+        if [ -n "${theip}" ];then
+            # 配置 bash 提示符
+            PS1="[\u@\h::${theip} \W]$ "
+        fi
+      dest: ~willwan/.setps.sh
+      mode: 0600
+      owner: willwan
+      group: willwan
+  - name: 配置 .bash_profile 以便加载脚本 .setps.sh
+    shell:
+      grep 'setps.sh' ~/.bash_profile || echo -e "\n# 把 ip 配置到 bash 提示符\ntest -f ~/.setps.sh && . ~/.setps.sh\n" >> ~/.bash_profile
